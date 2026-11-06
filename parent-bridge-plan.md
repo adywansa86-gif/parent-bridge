@@ -1,50 +1,129 @@
-# Parent Bridge — Build Plan
+# Parent Bridge — App Reference
 
-## Top-Level Overview
+> **Wansa Learning Universe · Wansa School, South Halmahera**
+> Last updated: November 2026
 
-**Goal:** Build a single-file offline prototype (`index.html` + supporting files) for the "Parent Bridge" feature of Wansa Learning Universe. It demonstrates one complete learning loop for a single topic: the human digestive system (Grade 4).
+---
 
-**Scope:** Three views (Child, Parent, Teacher) in one HTML page, plain HTML/CSS/JS, no frameworks, no server, works by opening `index.html` in a browser. All data is simulated. English ↔ Indonesian toggle applies to all UI text at once.
+## What the app does
 
-**Non-goals:** No backend, no real user accounts, no persistent storage beyond `localStorage` (optional), no other topics beyond digestive system for this prototype.
+Parent Bridge is a mobile-first offline prototype that demonstrates one complete learning loop for Grade 4 science: the human digestive system.
 
-**Files to produce:**
+A child reads a short lesson, then explains the topic in their own words. The app checks the answer against a keyword rubric (no AI yet), gives a level badge and up to two hints, and generates a bilingual WhatsApp-style message for the parent. A Teacher view shows the whole class at a glance.
+
+**Works by opening `index.html` in any browser — no server, no internet required.**
+English ↔ Indonesian toggle applies instantly to all UI text, parent messages, and hints.
+
+---
+
+## File structure
+
 ```
-index.html       — shell, navigation between views, language toggle
-style.css        — mobile-first friendly design, child/parent/teacher themes
-app.js           — all logic: rubric checker, parent message builder, simulated data, i18n strings
+Parent Bridge/
+├── index.html               — page shell, three view sections, navigation
+├── style.css                — mobile-first styles, color tokens, all components
+├── app.js                   — all logic: i18n, lesson data, rubric engine,
+│                              parent message builder, teacher data, view rendering
+├── parent-bridge-plan.md    — this file
+├── .gitignore               — excludes .bob/ and IBM Certificate.pdf
+│
+└── images/
+    ├── digestive-system.png — diagram shown in the lesson panel with overlay badges
+    ├── 1-mouth.svg          — organ icon for lesson card 1
+    ├── 2-esophagus.svg      — organ icon for lesson card 2
+    ├── 3-stomach.svg        — organ icon for lesson card 3
+    ├── 4-small-intestine.svg— organ icon for lesson card 4
+    ├── 5-large-intestine.svg— organ icon for lesson card 5
+    └── 6-anus.svg           — organ icon for lesson card 6
 ```
 
 ---
 
-## Color Palette & Design Tokens
+## Color palette
 
 | Token | Hex | Usage |
 |---|---|---|
-| Navy | `#12324A` | Header background, primary text on light |
-| Orange | `#E07A3F` | Primary buttons, active tab, badges |
-| Cream | `#F7F3EA` | Page background |
-| Teal | `#2A8C82` | Secondary buttons, "Understands" badge |
+| Navy | `#12324A` | Header background, headings, diagram badges |
+| Orange | `#E07A3F` | Primary buttons, active tab, number badges on lesson cards, arrows |
+| Cream | `#F7F3EA` | Page background, lesson card background |
+| Teal | `#2A8C82` | "Understands" badge, teacher summary banner, talked indicator |
+| White | `#ffffff` | Card backgrounds, badge text |
 
-- Font: large, rounded (system-ui or similar)
-- Footer text: `"Wansa School · Dari Halmahera, untuk dunia"`
-- Demo child name: **Raka**
-- Student names: common Indonesian first names (Budi, Siti, Ayu, Rizky, Putri, Dewi, Fajar, Nur, etc.)
+Font: `-apple-system, "Segoe UI", system-ui, sans-serif`
+Footer: *"Wansa School · Dari Halmahera, untuk dunia"*
 
 ---
 
-## Rubric Data (exact — do not modify)
+## App features
+
+### Child tab — two-step flow
+
+**Step 1 — Learn**
+- Title: "The Journey of Food" / "Perjalanan Makanan"
+- Digestive system diagram (`images/digestive-system.png`) with 6 navy round badges overlaid at precise percentage positions (position:relative wrapper so badges scale with the image on any screen size).
+- Small note under the diagram: "The liver, gallbladder and pancreas are helper organs."
+- Six lesson cards in a single column with orange ↓ arrows between them. Each card has an orange number badge (1–6), a 90 px organ icon from `images/`, the organ name in bold, and one fact sentence.
+- Image paths and badge positions are defined in one place: the `LESSON_IMAGES` constant in `app.js`. To swap icons (e.g. from .svg to .png), edit only that constant.
+- Button: "I'm ready to explain!" / "Aku siap menjelaskan!" → hides lesson, shows question.
+
+**Step 2 — Answer & check**
+- Helper text + question: "How does food travel through your body?"
+- Textarea (bilingual: English or Indonesian both accepted).
+- "Try a sample answer" dropdown (4 samples, A–D).
+- "Check my answer ✓" button → runs the rubric engine → shows result.
+- Result area: level badge, progress bar (score / 100), up to 2 hint sentences, score breakdown grid (toggle).
+- "Try again" resets; "Read the lesson again" (shown only when level ≠ Understands) returns to the lesson panel.
+
+### Parent tab
+- WhatsApp-style bubble with a 4-part message based on the child's latest level (defaults to "partly" if no answer yet).
+- Message parts: what the child understood, what they are still working on, a dinner-table question, the answer hint (styled differently).
+- "✅ We talked about it" / "⏰ Not yet" buttons; both disabled after either is tapped.
+- Child name shown: **Raka**.
+
+### Teacher tab
+- **Summary banner** at the top: "Most often missed today: [organ]" — computed live from all partly/needs-help students (Raka uses real rubric data; simulated students use parsed reason strings).
+- **"Needs help today" section** (red background): shows all `needs_help` + `not_done` students, each with a short reason line under their name.
+- **All students list**: all 25 students with name, reason, level badge, and a ✅ talked indicator.
+- Tapping a level badge cycles it: Not done → Needs help → Partly → Understands. Raka's badge updates automatically whenever he checks an answer in the Child tab.
+
+---
+
+## Class data (25 students)
+
+| Level | Count | Students |
+|---|---|---|
+| Understands | 12 | Raka (live), Siti, Ayu, Putri, Nur, Dimas, Rina, Lilis, Serli, Fitri, Hendra, Tari |
+| Partly understands | 9 | Rizky, Fajar, Indah, Adi, Maya, Yusuf, Tiara, Rama, Dewi |
+| Needs help | 3 | Bagas, Wulan, Budi |
+| Not done yet | 1 | Raka (initial state before any answer is checked) |
+
+Raka is always index 0 in STUDENTS. His level and reason are overwritten by `showResult()` every time he checks an answer.
+
+---
+
+## Rubric data (exact — do not modify)
 
 ```json
 {
-  "topic": "The digestive system",
   "organs": [
-    {"id": "mouth",           "names": ["mulut","mouth"],                                             "function_words": ["kunyah","unyah","gigi","liur","ludah","chew","teeth","saliva"]},
-    {"id": "esophagus",       "names": ["kerongkongan","esofagus","esophagus","oesophagus","food pipe","gullet"], "function_words": ["dorong","salur","nyalur","remas","push","carr","mov","squeez","send"]},
-    {"id": "stomach",         "names": ["lambung","stomach"],                                         "function_words": ["asam","aduk","hancur","bubur","acid","churn","mix","break","mash"]},
-    {"id": "small_intestine", "names": ["usus halus","small intestine"],                              "function_words": ["serap","nyerap","sari","nutrisi","gizi","absorb","nutrient"]},
-    {"id": "large_intestine", "names": ["usus besar","large intestine","colon"],                      "function_words": ["air","feses","kotoran","tinja","water","waste","poop","feces"]},
-    {"id": "anus",            "names": ["anus","dubur","rectum"],                                     "function_words": ["keluar","buang","out","leave"]}
+    {"id": "mouth",           "id_name": "mulut",        "en_name": "mouth",           "bodyOrder": 0,
+     "names": ["mulut","mouth"],
+     "function_words": ["kunyah","unyah","gigi","liur","ludah","chew","teeth","saliva"]},
+    {"id": "esophagus",       "id_name": "kerongkongan", "en_name": "esophagus",        "bodyOrder": 1,
+     "names": ["kerongkongan","esofagus","esophagus","oesophagus","food pipe","gullet"],
+     "function_words": ["dorong","salur","nyalur","remas","push","carr","mov","squeez","send"]},
+    {"id": "stomach",         "id_name": "lambung",      "en_name": "stomach",          "bodyOrder": 2,
+     "names": ["lambung","stomach"],
+     "function_words": ["asam","aduk","hancur","bubur","acid","churn","mix","break","mash"]},
+    {"id": "small_intestine", "id_name": "usus halus",   "en_name": "small intestine",  "bodyOrder": 3,
+     "names": ["usus halus","small intestine"],
+     "function_words": ["serap","nyerap","sari","nutrisi","gizi","absorb","nutrient"]},
+    {"id": "large_intestine", "id_name": "usus besar",   "en_name": "large intestine",  "bodyOrder": 4,
+     "names": ["usus besar","large intestine","colon"],
+     "function_words": ["air","feses","kotoran","tinja","water","waste","poop","feces"]},
+    {"id": "anus",            "id_name": "anus",         "en_name": "anus",             "bodyOrder": 5,
+     "names": ["anus","dubur","rectum"],
+     "function_words": ["keluar","buang","out","leave"]}
   ],
   "concepts": [
     {"id": "digest",    "words": ["cerna","digest"]},
@@ -59,290 +138,112 @@ app.js           — all logic: rubric checker, parent message builder, simulate
 
 ---
 
-## Scoring Rules (exact)
+## Scoring rules (exact)
 
-**Organs (20 pts):**
-- An organ matches if ANY of its `names` appears as a **whole word or phrase** (case-insensitive).
-- Special rule: `"anus"` must NOT match inside `"manusia"` → use word-boundary check.
+### Organs (20 pts)
+- An organ matches if **any** of its `names` appears as a **whole word or phrase** (case-insensitive, Unicode word-boundary check).
+- Special rule: `"anus"` must **not** match inside `"manusia"` — handled by the boundary regex.
 - Score = `round(20 × organs_found / 6)`
 
-**Functions (30 pts):**
-- For each of the **first 5 organs** (mouth → large intestine), check if ONE sentence contains both the organ name AND any of its `function_words`.
-- Function words match as **part of a word** (prefix-tolerant, e.g. "menyerap" matches "serap").
+### Functions (30 pts)
+- For each of the **first 5 organs** (mouth → large intestine), check if one sentence contains both the organ name **and** any of its `function_words`.
+- Function words match as **part of a word** (prefix-tolerant: "menyerap" matches "serap").
 - Score = `round(30 × organs_with_function / 5)`
 
-**Order (30 pts):**
-- Find where each matched organ **first appears** in the text (character position).
+### Order (30 pts)
+- Record where each matched organ **first appears** in the text (character position).
 - Sort matched organs by that position.
-- Count neighbouring pairs that are in the correct body order: mouth → esophagus → stomach → small intestine → large intestine → anus.
+- Count neighbouring pairs in correct body order (mouth→esophagus→stomach→small intestine→large intestine→anus). A pair is correct if organ B has a higher `bodyOrder` than organ A — they do **not** need to be adjacent. Example: mouth→small intestine counts as correct even though esophagus and stomach are skipped.
 - Score = `round(30 × correct_pairs / 5)`
 
-**Concepts (20 pts):**
-- Each concept word matches **anywhere, as part of a word**.
+### Concepts (20 pts)
+- Each concept word matches **anywhere, as part of a word** (substring).
 - Score = `round(20 × concepts_found / 5)`
 
-**Sentence splitting:** split on `.` `!` `?` and newlines.
+### Sentence splitting
+Split on `.` `!` `?` and newlines.
 
-**Level thresholds:**
+### Level thresholds
 | Score | EN label | ID label |
 |---|---|---|
-| 80–100 | Understands | Sudah paham |
-| 50–79 | Partly understands | Sebagian paham |
-| 0–49 | Needs help | Perlu bantuan |
+| 80–100 | 🌟 You understand! | 🌟 Kamu sudah paham! |
+| 50–79 | 🌱 You're learning! | 🌱 Kamu sedang belajar! |
+| 0–49 | 💪 Keep trying! | 💪 Terus semangat! |
 
 ---
 
-## Test Cases (all verified ✅ by manual dry run)
+## Test answers with expected scores
 
-All 8 answers produce correct scores. Key algorithmic insight confirmed:
-**Order scoring:** a pair (a,b) counts as correct if organ b appears **later in the body sequence** than organ a — not necessarily immediately adjacent. (Example: mouth→small_intestine counts as correct even though esophagus and stomach are skipped.)
+All 8 answers verified ✅ by inline `runTests()` in `app.js` (runs silently on every page load; errors appear in the browser console).
 
-| Test | Organs | Functions | Order | Concepts | Total | Level |
+| Test | Organs | Functions | Order | Concepts | **Total** | Level |
 |---|---|---|---|---|---|---|
 | A | 20 | 30 | 30 | 16 | **96** | Understands |
 | B | 13 | 18 | 18 | 12 | **61** | Partly understands |
 | C | 13 | 12 | 12 | 8 | **45** | Needs help |
 | D | 0 | 0 | 0 | 4 | **4** | Needs help |
 
-### Answer Texts
+### Full answer texts
 
-**A-ID (96):**
-> Makanan masuk ke mulut, lalu dikunyah oleh gigi dan dicampur air liur. Setelah itu makanan didorong lewat kerongkongan ke lambung. Di lambung makanan diaduk dan dihancurkan oleh asam lambung sampai jadi bubur. Lalu di usus halus sari makanan diserap oleh tubuh supaya kita punya energi. Di usus besar air diserap dan sisanya jadi kotoran. Terakhir sisa makanan keluar lewat anus.
-
-**A-EN (96):**
+**Sample A — score 96 (EN):**
 > Food goes into the mouth and the teeth chew it and mix it with saliva. Then the esophagus pushes the food down to the stomach. In the stomach, acid breaks the food down and churns it into a mush. Next, in the small intestine, the body absorbs the nutrients so we get energy. In the large intestine, water is absorbed and the rest becomes waste. Finally, the waste leaves the body through the anus.
 
-**B-ID (61):**
-> Pertama makanan dikunyah di mulut pakai gigi. Terus makanan lewat kerongkongan ke lambung. Di lambung ada asam yang menghancurkan makanan. Habis itu makanan dicerna di usus halus. Di usus halus sari makanan diserap.
+**Sample A — score 96 (ID):**
+> Makanan masuk ke mulut, lalu dikunyah oleh gigi dan dicampur air liur. Setelah itu makanan didorong lewat kerongkongan ke lambung. Di lambung makanan diaduk dan dihancurkan oleh asam lambung sampai jadi bubur. Lalu di usus halus sari makanan diserap oleh tubuh supaya kita punya energi. Di usus besar air diserap dan sisanya jadi kotoran. Terakhir sisa makanan keluar lewat anus.
 
-**B-EN (61):**
+**Sample B — score 61 (EN):**
 > First we chew food in the mouth with our teeth. Then the food goes through the esophagus to the stomach. The stomach has acid that breaks the food down. After that the food is digested in the small intestine. In the small intestine the nutrients are absorbed.
 
-**C-ID (45):**
-> Makanan masuk ke mulut lalu ke usus halus, terus ke lambung, baru ke usus besar. Lambung tugasnya mengaduk makanan. Usus halus menyerap sari makanan.
+**Sample B — score 61 (ID):**
+> Pertama makanan dikunyah di mulut pakai gigi. Terus makanan lewat kerongkongan ke lambung. Di lambung ada asam yang menghancurkan makanan. Habis itu makanan dicerna di usus halus. Di usus halus sari makanan diserap.
 
-**C-EN (45):**
+**Sample C — score 45 (EN):**
 > Food goes into the mouth, then to the small intestine, then to the stomach, and then to the large intestine. The stomach mixes the food. The small intestine absorbs nutrients.
 
-**D-ID (4):**
-> Makanan dimakan lalu masuk ke perut terus jadi kotoran.
+**Sample C — score 45 (ID):**
+> Makanan masuk ke mulut lalu ke usus halus, terus ke lambung, baru ke usus besar. Lambung tugasnya mengaduk makanan. Usus halus menyerap sari makanan.
 
-**D-EN (4):**
+**Sample D — score 4 (EN):**
 > We eat food, it goes into the tummy and turns into poop.
 
----
-
-## Architecture Diagram (described in text)
-
-```
-index.html
-  └── <nav>  [Child | Parent | Teacher]  [EN / ID toggle]
-  └── #child-view
-  └── #parent-view
-  └── #teacher-view
-
-app.js
-  ├── LANG object     — all UI strings in {en, id}
-  ├── RUBRIC          — keywords/concepts for rubric checker (bilingual)
-  ├── checkAnswer()   — scores child's text against rubric
-  ├── buildParentMsg()— turns score into 3-sentence WhatsApp message
-  ├── STUDENTS[]      — 25 simulated students with scores/status
-  ├── renderChild()
-  ├── renderParent()
-  └── renderTeacher()
-```
+**Sample D — score 4 (ID):**
+> Makanan dimakan lalu masuk ke perut terus jadi kotoran.
 
 ---
 
-## Sub-Tasks
-
----
-
-### Sub-Task 1 — Project Shell & Navigation
-
-**Status:** `[ ] pending`
-
-**Intent:**  
-Create the three files with the correct structure, navigation tabs, and the language toggle. No real content yet — just the skeleton that all other sub-tasks will fill.
-
-**Expected Outcomes:**
-- Opening `index.html` shows three navigation tabs: Child, Parent, Teacher.
-- A toggle button (EN / ID) sits in the top-right corner.
-- Clicking a tab hides the other two views and shows the selected one.
-- Clicking the toggle switches the language label on the button (full i18n wiring comes in Sub-Task 5).
-- The page looks clean on a 375 px wide phone screen.
-
-**Todo List:**
-1. Create `index.html` with `<nav>`, three `<section>` view containers, and a `<link>` to `style.css` and `<script>` to `app.js`.
-2. Create `style.css` with a mobile-first reset, a simple color palette (warm, child-friendly), and tab/active styles.
-3. Create `app.js` with a `currentLang = 'en'` variable, a `showView(name)` function, and a `toggleLang()` function stub.
-4. Wire the tab buttons and toggle button to the JS functions.
-
-**Relevant Context:** None yet — this is the foundation.
-
----
-
-### Sub-Task 2 — Rubric Engine (`checkAnswer`)
-
-**Status:** `[ ] pending`
-
-**Intent:**  
-Build the bilingual rubric checker that is the core intelligence of the Child view. It must work regardless of which language the UI toggle shows.
-
-**Expected Outcomes:**
-- `checkAnswer(text)` accepts a string in English or Indonesian (or mixed).
-- It checks for four rubric categories: organs, functions, order/sequence, and key concepts (e.g. "digestion", "nutrients").
-- It returns a score object: `{ level: 'understands'|'partly'|'needs_help', matched: [...], hints: [...] }`.
-- Level thresholds: ≥ 3 categories matched → "Understands"; 1–2 → "Partly understands"; 0 → "Needs help".
-- Hints are returned only when level is NOT "Understands" (max 2 hints).
-- Matching is case-insensitive and accent-tolerant.
-
-**Todo List:**
-1. Define `RUBRIC` object in `app.js` with four categories, each containing English and Indonesian keyword arrays.
-2. Write `checkAnswer(text)` that normalises the input, checks each category, counts matches, and returns the score object.
-3. Write `getHints(matched)` that picks up to 2 hints for unmatched categories, in the current language.
-4. Add unit-style inline test calls (commented out) to verify the checker works for sample answers.
-
-**Relevant Context:** Sub-Task 1 must exist first (app.js file created).
-
----
-
-### Sub-Task 3 — Child View UI
-
-**Status:** `[ ] pending`
-
-**Intent:**  
-Build the interactive Child view: the question prompt, the text input, the submit button, the friendly result badge, and the try-again flow.
-
-**Expected Outcomes:**
-- Child sees the question: "How does food travel through your body?"
-- Child types an answer in the textarea and taps "Check my answer".
-- A friendly badge appears: 🌟 "You understand!" / 🌱 "You're learning!" / 💪 "Keep trying!"
-- If not "Understands", up to 2 hint sentences appear below the badge.
-- A "Try again" button resets the textarea and badge (keeps the question).
-- The view looks welcoming and age-appropriate (large text, rounded corners, warm colours).
-
-**Todo List:**
-1. Add Child view HTML inside `#child-view`: question text, `<textarea>`, submit button, result area (badge + hints), try-again button.
-2. Write `renderChild()` in `app.js` that attaches the submit handler, calls `checkAnswer()`, and updates the result area.
-3. Style the badge states (Understands = green, Partly = yellow, Needs help = red/orange) in `style.css`.
-4. Make the try-again button visible only after a result is shown.
-
-**Relevant Context:** Depends on Sub-Task 2 (rubric engine).
-
----
-
-### Sub-Task 4 — Parent View UI
-
-**Status:** `[ ] pending`
-
-**Intent:**  
-Build the Parent view that shows a WhatsApp-style message card with exactly three sentences and two action buttons.
-
-**Expected Outcomes:**
-- The view shows a message card styled like a WhatsApp chat bubble.
-- The message has exactly 3 sentences: what the child understood, what they are still learning, one dinner-table question.
-- Two buttons: "✅ We talked about it" / "⏰ Not yet".
-- Pressing a button shows a warm confirmation text (e.g. "Terima kasih! / Thank you!") and disables both buttons.
-- No numbers, no rankings, no grades visible to the parent.
-- The message and button labels switch with the language toggle.
-
-**Todo List:**
-1. Add Parent view HTML inside `#parent-view`: message card container, two buttons, confirmation area.
-2. Write `buildParentMsg(scoreObj)` in `app.js` that maps level → 3-sentence message (in current language).
-3. Write `renderParent()` that calls `buildParentMsg` with the last child result (or a default simulated result if child view hasn't been used) and populates the card.
-4. Wire the two buttons: log state to a variable, show confirmation text, disable buttons.
-5. Style the chat bubble, buttons (distinct colours), and confirmation text in `style.css`.
-
-**Relevant Context:** Depends on Sub-Task 3 (needs the child's last score, or a simulated fallback).
-
----
-
-### Sub-Task 5 — Teacher View UI
-
-**Status:** `[ ] pending`
-
-**Intent:**  
-Build the Teacher view: a class list of 25 simulated students, a "Needs help today" priority section at the top, and inline score editing.
-
-**Expected Outcomes:**
-- "Needs help today" section shows students whose level is "needs_help", highlighted.
-- Below, a full list of all 25 students shows name + level badge.
-- Teacher can click a student's level badge to cycle it: needs_help → partly → understands.
-- The "Needs help today" section updates immediately when a score is changed.
-- Labels (column headers, badge text) switch with the language toggle.
-- No numbers or percentages — only level labels.
-
-**Todo List:**
-1. Define `STUDENTS` array in `app.js`: 25 students with `{name, level, talked}` — distribute levels realistically (≈6 needs_help, ≈10 partly, ≈9 understands).
-2. Add Teacher view HTML inside `#teacher-view`: "Needs help" section container, full list container.
-3. Write `renderTeacher()` that builds both sections from the `STUDENTS` array.
-4. Write `cycleLevel(studentIndex)` that rotates the level and calls `renderTeacher()` to re-render.
-5. Style the priority section (distinct background), level badges (same colour coding as Child view), and make the list scannable on a phone screen.
-
-**Relevant Context:** Depends on Sub-Task 1 (shell). Independent of Sub-Tasks 2–4 except for shared level colour styles.
-
----
-
-### Sub-Task 6 — i18n Wiring (Language Toggle)
-
-**Status:** `[ ] pending`
-
-**Intent:**  
-Wire the language toggle to every piece of visible text across all three views, using a single `LANG` object as the single source of truth.
-
-**Expected Outcomes:**
-- `LANG` object in `app.js` has `en` and `id` keys, each containing every UI string.
-- `applyLang()` function reads `currentLang` and updates all text nodes/placeholders in the DOM.
-- Pressing EN/ID toggle calls `toggleLang()` → sets `currentLang` → calls `applyLang()` → re-renders all active content.
-- The rubric keywords and parent message templates are also stored in `LANG` (or the bilingual `RUBRIC` object handles them independently).
-- Adding or changing a word requires editing only `LANG`, nowhere else.
-
-**Todo List:**
-1. Collect every UI string from Sub-Tasks 1–5 into the `LANG` object with `en` and `id` versions.
-2. Add `data-i18n="key"` attributes to every HTML element that contains translatable text.
-3. Write `applyLang()` that queries all `[data-i18n]` elements and sets their `textContent` from `LANG[currentLang]`.
-4. Call `applyLang()` on page load and after every toggle click.
-5. Ensure parent message sentences and hints are regenerated (not cached) when language changes, so they also switch.
-
-**Relevant Context:** Depends on all previous sub-tasks being complete. This is the final wiring pass.
-
----
-
-### Sub-Task 7 — Polish & Mobile QA
-
-**Status:** `[ ] pending`
-
-**Intent:**  
-Final pass to ensure the prototype looks good on a phone, feels friendly for children and parents, and is ready for a demo.
-
-**Expected Outcomes:**
-- All three views are comfortable to use on a 375 px wide screen with no horizontal scroll.
-- Font sizes, tap targets (min 44 px), spacing, and colours are appropriate.
-- The Wansa/Parent Bridge name appears in the header.
-- A brief "How to use" note (one line per view) is visible — helps demo reviewers understand each view quickly.
-- Both languages tested end-to-end: child types in Indonesian while UI is in English → rubric still matches → parent message appears in English.
-
-**Todo List:**
-1. Audit all tap targets and font sizes on a simulated 375 px viewport.
-2. Add the app name/logo text to the `<header>`.
-3. Add one-line helper text per view (translatable via `LANG`).
-4. Test the bilingual rubric: type Indonesian keywords while UI is in English and confirm level is correct.
-5. Test language toggle from Child → Parent → Teacher in both EN and ID.
-6. Fix any layout or logic issues found.
-
-**Relevant Context:** Final sub-task. All others must be complete first.
-
----
-
-## Key Design Decisions
+## Key technical decisions
 
 | Decision | Choice | Reason |
 |---|---|---|
-| Single file vs multiple | 3 files (index.html, style.css, app.js) | Easier to edit and demo; still offline |
-| Framework | None — vanilla JS | Constraint from brief; no build step needed |
-| Data persistence | JS variables only (no localStorage for now) | Prototype scope; simplest |
-| Rubric matching | Keyword-based, bilingual arrays | Sufficient for demo; no AI/API needed |
-| Parent message | Template strings per level | Predictable, easy to translate |
-| Teacher editing | Click-to-cycle (no form/modal) | Fast, phone-friendly |
-| i18n approach | Single LANG object + data-i18n attributes | Easy to maintain; one place to edit strings |
+| Architecture | Vanilla JS, no framework | No build step; works by double-clicking the file |
+| Rubric engine | Keyword-based, bilingual arrays | Fast, offline, no API; sufficient for prototype |
+| Language toggle | `currentLang` var + `data-i18n` attributes + `LANG` object | One place to edit any string |
+| Hints | Built fresh in `showResult()`, not stored in the result object | Ensures hints always reflect the current UI language |
+| Image paths / badge positions | Single `LESSON_IMAGES` constant in `app.js` | Easy to swap icons or adjust positions in one place |
+| Raka in Teacher tab | `STUDENTS[0]` updated by `showResult()` on every answer check | Live round-trip: Child tab answer appears immediately in Teacher view |
+| Student reasons | Bilingual `{ en, id }` object on each student | Shown under the name; used by `getMostMissed()` to compute the summary |
+| "Most often missed" | `getMostMissed()` parses real rubric data for Raka, reason strings for simulated students | Avoids storing a full rubric result for every simulated student |
+
+---
+
+## What is still to do
+
+### 1. Replace the rubric engine with a real AI model
+The keyword rubric is a placeholder. The production app will send the child's text to an AI model (e.g. IBM watsonx, or a fine-tuned model hosted on Wansa servers) that:
+- Understands paraphrases ("the tube that connects your mouth to your stomach" → esophagus)
+- Handles mixed-language sentences naturally
+- Returns a structured score object with the same shape as `checkAnswer()` today, so the rest of the app needs no changes
+
+The swap point is the `checkAnswer()` function in `app.js`. Everything else reads from its return value.
+
+### 2. Add more topics
+The digestive system is topic 1. The same lesson/question/rubric pattern can be reused for other Grade 4 topics (e.g. the food chain, the water cycle).
+
+### 3. Real student data
+Replace the `STUDENTS` array with a live class roster fetched from the Wansa Universe backend. The Teacher view is already designed for this — only the data source changes.
+
+### 4. Persistent state
+Child answers and Parent "talked" responses currently reset on page refresh. Add `localStorage` save/restore, or connect to the backend.
+
+### 5. Accessibility and broader device testing
+Test on low-end Android phones (common in South Halmahera). Verify font sizes, contrast ratios, and touch targets on small screens.
