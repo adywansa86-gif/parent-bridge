@@ -27,7 +27,17 @@
 
   <!-- ── Child View ── -->
   <section id="child-view" class="view">
-    <div class="card">
+
+    <!-- Lesson panel (shown first) -->
+    <div id="lesson-panel" class="card">
+      <h2 id="lesson-title" class="lesson-title"></h2>
+      <div id="lesson-cards" class="lesson-grid"></div>
+      <p id="lesson-note" class="lesson-note"></p>
+      <button id="ready-btn" class="btn btn-primary lesson-ready-btn"></button>
+    </div>
+
+    <!-- Question panel (hidden until ready) -->
+    <div id="question-panel" class="card" style="display:none;">
       <p style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;" data-i18n="childHelper">
         Answer in your own words — English or Indonesian both work!
       </p>
@@ -74,10 +84,13 @@
         <!-- Hints -->
         <div id="hints-div" class="hints" style="margin-top:10px;"></div>
 
-        <!-- Try again -->
-        <button id="retry-btn" class="btn btn-ghost" style="display:none;width:100%;margin-top:12px;" data-i18n="tryAgainBtn">Try again</button>
+        <!-- Try again / Read again -->
+        <div id="retry-row" style="display:none;margin-top:12px;">
+          <button id="retry-btn" class="btn btn-ghost" style="width:100%;" data-i18n="tryAgainBtn">Try again</button>
+          <button id="read-again-btn" class="btn btn-ghost" style="width:100%;margin-top:8px;display:none;" data-i18n="readAgainBtn">Read the lesson again</button>
+        </div>
       </div>
-    </div>
+    </div><!-- /question-panel -->
   </section>
 
   <!-- ── Parent View ── -->

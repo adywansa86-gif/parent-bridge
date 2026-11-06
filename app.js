@@ -15,7 +15,21 @@ const LANG = {
     tabTeacher: 'Teacher',
     langBtn:    'ID',
 
-    // Child view
+    // Child view — lesson
+    lessonTitle:   'The Journey of Food',
+    lessonNote:    'In the full app, this lesson comes from the Wansa Universe games.',
+    readyBtn:      "I'm ready to explain!",
+    readAgainBtn:  'Read the lesson again',
+    lessonCards: [
+      { emoji: '👄', organ: 'Mouth',            fact: 'Teeth chew the food and saliva makes it soft.' },
+      { emoji: '🫁', organ: 'Esophagus',        fact: 'It pushes the food down to the stomach.' },
+      { emoji: '🫙', organ: 'Stomach',          fact: 'Stomach acid breaks the food down and churns it into a soft mush.' },
+      { emoji: '🌀', organ: 'Small intestine',  fact: 'The body absorbs the nutrients from the food here.' },
+      { emoji: '➰', organ: 'Large intestine',  fact: 'Water is absorbed, and the rest becomes waste.' },
+      { emoji: '🔚', organ: 'Anus',             fact: 'The waste leaves the body.' },
+    ],
+
+    // Child view — question
     childHelper:   'Answer in your own words — English or Indonesian both work!',
     question:      'How does food travel through your body?',
     placeholder:   'Write your explanation here…',
@@ -90,7 +104,21 @@ const LANG = {
     tabTeacher: 'Guru',
     langBtn:    'EN',
 
-    // Child view
+    // Child view — lesson
+    lessonTitle:   'Perjalanan Makanan',
+    lessonNote:    'Di aplikasi lengkap, materi ini berasal dari permainan Wansa Universe.',
+    readyBtn:      'Aku siap menjelaskan!',
+    readAgainBtn:  'Baca materi lagi',
+    lessonCards: [
+      { emoji: '👄', organ: 'Mulut',          fact: 'Gigi mengunyah makanan dan air liur membuatnya lunak.' },
+      { emoji: '🫁', organ: 'Kerongkongan',   fact: 'Kerongkongan mendorong makanan turun ke lambung.' },
+      { emoji: '🫙', organ: 'Lambung',        fact: 'Asam lambung menghancurkan dan mengaduk makanan menjadi seperti bubur.' },
+      { emoji: '🌀', organ: 'Usus halus',     fact: 'Di sini sari-sari makanan diserap oleh tubuh.' },
+      { emoji: '➰', organ: 'Usus besar',     fact: 'Air diserap, dan sisanya menjadi kotoran.' },
+      { emoji: '🔚', organ: 'Anus',           fact: 'Sisa makanan dikeluarkan dari tubuh.' },
+    ],
+
+    // Child view — question
     childHelper:   'Jawab dengan kata-katamu sendiri — boleh bahasa Indonesia atau Inggris!',
     question:      'Bagaimana makanan berjalan di dalam tubuhmu?',
     placeholder:   'Tulis penjelasanmu di sini…',
@@ -501,8 +529,41 @@ function applyLang() {
 }
 
 // ── Child view ───────────────────────────────────────────────
+
+// Render lesson cards and texts in the current language
+function renderLesson() {
+  const L = LANG[currentLang];
+  document.getElementById('lesson-title').textContent = L.lessonTitle;
+  document.getElementById('lesson-note').textContent  = L.lessonNote;
+  document.getElementById('ready-btn').textContent    = L.readyBtn;
+
+  const grid = document.getElementById('lesson-cards');
+  grid.innerHTML = '';
+  L.lessonCards.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'lesson-card';
+    card.innerHTML =
+      `<span class="lesson-card-emoji">${c.emoji}</span>` +
+      `<span class="lesson-card-organ">${c.organ}</span>` +
+      `<span class="lesson-card-fact">${c.fact}</span>`;
+    grid.appendChild(card);
+  });
+}
+
+function showLesson() {
+  document.getElementById('lesson-panel').style.display   = '';
+  document.getElementById('question-panel').style.display = 'none';
+}
+
+function showQuestion() {
+  document.getElementById('lesson-panel').style.display   = 'none';
+  document.getElementById('question-panel').style.display = '';
+}
+
 function refreshChildLang() {
-  // Update static text via i18n attributes — applyLang() already did it
+  // Re-render the lesson in the new language
+  renderLesson();
+  // Update the read-again button text (it's inside question-panel, applyLang handles data-i18n)
   // Update sample dropdown options text
   const sel = document.getElementById('sample-select');
   if (!sel) return;
@@ -515,10 +576,21 @@ function refreshChildLang() {
 }
 
 function initChildView() {
-  const btn = document.getElementById('check-btn');
-  const ta  = document.getElementById('answer-ta');
-  const sel = document.getElementById('sample-select');
-  const retryBtn = document.getElementById('retry-btn');
+  const btn          = document.getElementById('check-btn');
+  const ta           = document.getElementById('answer-ta');
+  const sel          = document.getElementById('sample-select');
+  const retryBtn     = document.getElementById('retry-btn');
+  const readAgainBtn = document.getElementById('read-again-btn');
+  const readyBtn     = document.getElementById('ready-btn');
+
+  // "I'm ready to explain!" — hide lesson, show question
+  readyBtn.addEventListener('click', () => {
+    showQuestion();
+    ta.value = '';
+    sel.value = '';
+    clearResult();
+    ta.focus();
+  });
 
   // Check button — always visible, always re-runs on current text
   btn.addEventListener('click', () => {
@@ -528,12 +600,20 @@ function initChildView() {
     showResult(lastResult);
   });
 
-  // Try again — clears result and textarea, keeps Check button visible
+  // Try again — clears result and textarea
   retryBtn.addEventListener('click', () => {
     ta.value = '';
     sel.value = '';
     clearResult();
     ta.focus();
+  });
+
+  // "Read the lesson again" — go back to lesson panel
+  readAgainBtn.addEventListener('click', () => {
+    ta.value = '';
+    sel.value = '';
+    clearResult();
+    showLesson();
   });
 
   // Choosing a new sample clears the old result
@@ -551,9 +631,9 @@ function initChildView() {
 
   // Show / hide score breakdown
   document.getElementById('show-details-btn').addEventListener('click', () => {
-    const bd = document.getElementById('score-breakdown');
+    const bd  = document.getElementById('score-breakdown');
     const btn = document.getElementById('show-details-btn');
-    const L = LANG[currentLang];
+    const L   = LANG[currentLang];
     if (bd.style.display === 'none') {
       bd.style.display = 'grid';
       btn.textContent = L.hideDetails;
@@ -562,20 +642,23 @@ function initChildView() {
       btn.textContent = L.showDetails;
     }
   });
+
+  // Initial render of the lesson panel
+  renderLesson();
 }
 
 function clearResult() {
-  document.getElementById('result-area').style.display = 'none';
-  document.getElementById('retry-btn').style.display = 'none';
+  document.getElementById('result-area').style.display  = 'none';
+  document.getElementById('retry-row').style.display    = 'none';
+  document.getElementById('read-again-btn').style.display = 'none';
   lastResult = null;
 }
 
 function showResult(result) {
   const L = LANG[currentLang];
-  const area = document.getElementById('result-area');
-  const badge = document.getElementById('result-badge');
+  const area     = document.getElementById('result-area');
+  const badge    = document.getElementById('result-badge');
   const hintsDiv = document.getElementById('hints-div');
-  const retryBtn = document.getElementById('retry-btn');
   // Check button stays visible — never hide it
 
   // Badge with level-matched colors
@@ -619,7 +702,10 @@ function showResult(result) {
   document.getElementById('show-details-btn').textContent = L.showDetails;
 
   area.style.display = 'block';
-  retryBtn.style.display = 'block';
+  document.getElementById('retry-row').style.display = 'block';
+  // Show "Read the lesson again" only when level is not "understands"
+  const readAgainBtn = document.getElementById('read-again-btn');
+  readAgainBtn.style.display = result.level !== 'understands' ? 'block' : 'none';
 }
 
 // ── Parent view ──────────────────────────────────────────────

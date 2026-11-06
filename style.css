@@ -278,6 +278,59 @@ main { flex: 1; padding: 20px 16px; max-width: 480px; width: 100%; margin: 0 aut
 }
 .score-breakdown span { font-weight: 600; }
 
+/* ── Lesson panel ── */
+.lesson-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 14px;
+  text-align: center;
+}
+.lesson-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.lesson-card {
+  background: var(--cream);
+  border: 1.5px solid #e0dbd0;
+  border-radius: 12px;
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+}
+.lesson-card-emoji { font-size: 2rem; line-height: 1; }
+.lesson-card-organ {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--navy);
+  margin-top: 2px;
+}
+.lesson-card-fact {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.lesson-note {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-style: italic;
+  text-align: center;
+  margin-bottom: 16px;
+  border-top: 1px solid #e0dbd0;
+  padding-top: 10px;
+}
+.lesson-ready-btn {
+  width: 100%;
+  font-size: 1rem;
+  padding: 14px;
+}
+
+
 /* ── Footer ── */
 footer {
   text-align: center;
