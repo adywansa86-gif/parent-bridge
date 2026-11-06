@@ -1,0 +1,288 @@
+/* ── Reset & base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:  #12324A;
+  --orange:#E07A3F;
+  --cream: #F7F3EA;
+  --teal:  #2A8C82;
+  --white: #ffffff;
+  --text:  #1a1a1a;
+  --muted: #6b6b6b;
+  --radius: 14px;
+}
+
+html { font-size: 16px; }
+body {
+  font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+  background: var(--cream);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ── */
+header {
+  background: var(--navy);
+  color: var(--white);
+  padding: 14px 16px 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.app-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.app-subtitle {
+  font-size: 0.72rem;
+  opacity: 0.7;
+}
+
+/* ── Language toggle ── */
+#lang-btn {
+  background: var(--orange);
+  color: var(--white);
+  border: none;
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  min-width: 60px;
+  min-height: 36px;
+}
+#lang-btn:hover { opacity: 0.88; }
+
+/* ── Tab navigation ── */
+nav {
+  display: flex;
+  gap: 0;
+}
+.tab-btn {
+  flex: 1;
+  background: transparent;
+  color: rgba(255,255,255,0.65);
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 10px 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.tab-btn.active {
+  color: var(--white);
+  border-bottom-color: var(--orange);
+}
+
+/* ── Main content ── */
+main { flex: 1; padding: 20px 16px; max-width: 480px; width: 100%; margin: 0 auto; }
+.view { display: none; }
+.view.active { display: block; }
+
+/* ── Cards ── */
+.card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+
+/* ── Buttons ── */
+.btn {
+  display: inline-block;
+  border: none;
+  border-radius: 30px;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 48px;
+  transition: opacity 0.15s;
+}
+.btn:hover { opacity: 0.85; }
+.btn-primary { background: var(--orange); color: var(--white); width: 100%; }
+.btn-secondary { background: var(--teal); color: var(--white); }
+.btn-ghost { background: transparent; color: var(--navy); border: 2px solid var(--navy); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Level badges ── */
+.badge {
+  display: inline-block;
+  border-radius: 30px;
+  padding: 8px 20px;
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 12px 0 8px;
+}
+.badge-understands  { background: #d4f5ef; color: #1a6b63; }
+.badge-partly       { background: #fef3cd; color: #7a5c00; }
+.badge-needs-help   { background: #fde8e0; color: #8b2e0e; }
+
+/* ── Child view ── */
+#child-view .question {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+#child-view textarea {
+  width: 100%;
+  min-height: 130px;
+  border: 2px solid #ddd;
+  border-radius: var(--radius);
+  padding: 12px;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  line-height: 1.5;
+}
+#child-view textarea:focus { outline: none; border-color: var(--teal); }
+
+.hints { margin-top: 10px; }
+.hint-item {
+  background: #fffbe6;
+  border-left: 4px solid var(--orange);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  color: #5a3e00;
+}
+.result-area { text-align: center; }
+
+/* sample answers */
+.sample-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #ddd;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  background: var(--white);
+  color: var(--navy);
+  margin-top: 8px;
+}
+
+/* ── Parent view ── */
+.wa-bubble p + p { margin-top: 8px; }
+.parent-answer-hint {
+  margin-top: 10px !important;
+  padding-top: 10px;
+  border-top: 1px dashed #b2d8b2;
+  font-style: italic;
+  font-size: 0.88rem;
+  color: #3a5a3a;
+}
+
+.wa-bubble {
+  background: #e7ffd5;
+  border-radius: 14px 14px 14px 4px;
+  padding: 16px 18px;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: #1a1a1a;
+  position: relative;
+  margin-bottom: 16px;
+}
+.wa-bubble::before {
+  content: '';
+  position: absolute;
+  left: -8px; top: 14px;
+  border: 8px solid transparent;
+  border-right-color: #e7ffd5;
+  border-left: 0;
+}
+.parent-btn-row { display: flex; gap: 10px; }
+.parent-btn-row .btn { flex: 1; font-size: 0.9rem; }
+.confirmation-text {
+  text-align: center;
+  color: var(--teal);
+  font-weight: 700;
+  font-size: 1rem;
+  margin-top: 12px;
+  min-height: 24px;
+}
+
+/* ── Teacher view ── */
+.needs-help-section {
+  background: #fde8e0;
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.needs-help-section h2 { color: #8b2e0e; font-size: 1rem; margin-bottom: 10px; }
+.student-list { display: flex; flex-direction: column; gap: 8px; }
+.student-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--white);
+  border-radius: 10px;
+  padding: 10px 14px;
+  gap: 10px;
+}
+.student-name { font-size: 0.95rem; font-weight: 600; flex: 1; }
+.badge-clickable { cursor: pointer; user-select: none; }
+.badge-clickable:hover { opacity: 0.8; }
+
+/* ── Progress bar ── */
+.score-bar-wrap {
+  background: #e8e3d8;
+  border-radius: 8px;
+  height: 12px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+.score-bar-fill {
+  height: 100%;
+  border-radius: 8px;
+  transition: width 0.4s ease, background 0.3s;
+  background: var(--teal);
+}
+
+/* ── Details toggle ── */
+.details-toggle-btn {
+  background: none;
+  border: none;
+  color: var(--navy);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 2px 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.details-toggle-btn:hover { opacity: 0.7; }
+
+/* ── Score breakdown grid ── */
+.score-breakdown {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--cream);
+  border-radius: 10px;
+  font-size: 0.82rem;
+  color: var(--navy);
+}
+.score-breakdown span { font-weight: 600; }
+
+/* ── Footer ── */
+footer {
+  text-align: center;
+  padding: 16px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  border-top: 1px solid #e0dbd0;
+}

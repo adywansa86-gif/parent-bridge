@@ -1,0 +1,5 @@
+﻿# Bob workspace folder — do NOT push to GitHub
+.bob/
+
+# Private document — do NOT push to GitHub
+IBM Certificate.pdf

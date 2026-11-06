@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Parent Bridge — Wansa School</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div>
+      <div class="app-title">Parent Bridge</div>
+      <div class="app-subtitle">Wansa Learning Universe</div>
+    </div>
+    <button id="lang-btn" data-i18n="langBtn">ID</button>
+  </div>
+  <nav>
+    <button class="tab-btn" data-view="child"   data-i18n="tabChild">Child</button>
+    <button class="tab-btn" data-view="parent"  data-i18n="tabParent">Parent</button>
+    <button class="tab-btn" data-view="teacher" data-i18n="tabTeacher">Teacher</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ── Child View ── -->
+  <section id="child-view" class="view">
+    <div class="card">
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;" data-i18n="childHelper">
+        Answer in your own words — English or Indonesian both work!
+      </p>
+      <p class="question" data-i18n="question">How does food travel through your body?</p>
+
+      <textarea id="answer-ta"
+        data-i18n-placeholder="placeholder"
+        placeholder="Write your explanation here…"
+        rows="6"></textarea>
+
+      <div style="margin-top:12px;">
+        <label style="font-size:0.82rem;color:var(--muted);" data-i18n="sampleLabel">Try a sample answer:</label>
+        <select id="sample-select" class="sample-select">
+          <option value="" data-i18n="sampleDefault">— choose a sample —</option>
+          <option value="A" data-i18n="sampleA">Sample A (full answer)</option>
+          <option value="B" data-i18n="sampleB">Sample B (good)</option>
+          <option value="C" data-i18n="sampleC">Sample C (partial)</option>
+          <option value="D" data-i18n="sampleD">Sample D (needs help)</option>
+        </select>
+      </div>
+
+      <div style="margin-top:16px;">
+        <button id="check-btn" class="btn btn-primary" data-i18n="checkBtn">Check my answer ✓</button>
+      </div>
+
+      <!-- Result area -->
+      <div id="result-area" style="display:none;margin-top:16px;">
+        <div class="result-area">
+          <span id="result-badge" class="badge"></span>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="score-bar-wrap">
+          <div id="score-bar-fill" class="score-bar-fill" style="width:0%;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+          <span id="score-bar-pct" style="font-size:0.8rem;color:var(--muted);"></span>
+          <button id="show-details-btn" class="details-toggle-btn"></button>
+        </div>
+
+        <!-- Score breakdown grid (hidden by default) -->
+        <div id="score-breakdown" class="score-breakdown" style="display:none;"></div>
+
+        <!-- Hints -->
+        <div id="hints-div" class="hints" style="margin-top:10px;"></div>
+
+        <!-- Try again -->
+        <button id="retry-btn" class="btn btn-ghost" style="display:none;width:100%;margin-top:12px;" data-i18n="tryAgainBtn">Try again</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Parent View ── -->
+  <section id="parent-view" class="view">
+    <div class="card">
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:14px;" data-i18n="parentHelper">
+        A message for you about your child's learning today.
+      </p>
+
+      <!-- WhatsApp-style bubble -->
+      <div id="wa-bubble" class="wa-bubble"></div>
+
+      <div class="parent-btn-row">
+        <button id="talked-btn" class="btn btn-secondary" data-i18n="talkedBtn">✅ We talked about it</button>
+        <button id="notyet-btn" class="btn btn-ghost"     data-i18n="notYetBtn">⏰ Not yet</button>
+      </div>
+      <p id="confirmation-text" class="confirmation-text"></p>
+    </div>
+  </section>
+
+  <!-- ── Teacher View ── -->
+  <section id="teacher-view" class="view">
+    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:12px;" data-i18n="teacherHelper">
+      Tap a level badge to correct it.
+    </p>
+
+    <!-- Needs help today -->
+    <div class="needs-help-section">
+      <h2 data-i18n="needsHelpTitle">🔴 Needs help today</h2>
+      <div id="needs-help-list" class="student-list"></div>
+    </div>
+
+    <!-- All students -->
+    <div class="card">
+      <h2 style="font-size:0.95rem;color:var(--navy);margin-bottom:12px;" data-i18n="allStudents">All students</h2>
+      <div id="all-students-list" class="student-list"></div>
+    </div>
+  </section>
+
+</main>
+
+<footer>Wansa School · Dari Halmahera, untuk dunia</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
