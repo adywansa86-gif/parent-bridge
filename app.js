@@ -539,13 +539,21 @@ function renderLesson() {
 
   const grid = document.getElementById('lesson-cards');
   grid.innerHTML = '';
-  L.lessonCards.forEach(c => {
+  L.lessonCards.forEach((c, i) => {
+    if (i > 0) {
+      const arrow = document.createElement('div');
+      arrow.className = 'lesson-arrow';
+      arrow.textContent = '↓';
+      grid.appendChild(arrow);
+    }
     const card = document.createElement('div');
     card.className = 'lesson-card';
     card.innerHTML =
-      `<span class="lesson-card-emoji">${c.emoji}</span>` +
-      `<span class="lesson-card-organ">${c.organ}</span>` +
-      `<span class="lesson-card-fact">${c.fact}</span>`;
+      `<span class="lesson-card-number">${i + 1}</span>` +
+      `<span class="lesson-card-body">` +
+        `<span class="lesson-card-organ">${c.organ}</span>` +
+        `<span class="lesson-card-fact">${c.fact}</span>` +
+      `</span>`;
     grid.appendChild(card);
   });
 }
