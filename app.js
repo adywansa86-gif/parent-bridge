@@ -95,6 +95,8 @@ const LANG = {
     lvlUnderstands: 'Understands',
     lvlPartly:      'Partly understands',
     lvlNeedsHelp:   'Needs help',
+    lvlNotDone:     'Not done yet',
+    teacherSummary: 'Most often missed today: {organ}',
     talkedYes:      '✅ talked',
     talkedNo:       '',
   },
@@ -185,6 +187,8 @@ const LANG = {
     lvlUnderstands: 'Sudah paham',
     lvlPartly:      'Sebagian paham',
     lvlNeedsHelp:   'Perlu bantuan',
+    lvlNotDone:     'Belum selesai',
+    teacherSummary: 'Paling sering terlewat hari ini: {organ}',
     talkedYes:      '✅ sudah bicara',
     talkedNo:       '',
   }
@@ -341,12 +345,9 @@ function checkAnswer(text) {
   else if (total >= 50) level = 'partly';
   else                  level = 'needs_help';
 
-  // ── Hints (max 2, for unmatched areas) ──
-  const hints = buildHints({ foundOrganIds, functionsMatched, correctPairs, matchedOrganObjs, conceptsMatched });
-
   return {
     total, organsScore, functionsScore, orderScore, conceptsScore,
-    level, hints,
+    level,
     foundOrganIds, functionsMatched, correctPairs, conceptsMatched
   };
 }
@@ -486,35 +487,44 @@ const SAMPLES = {
 };
 
 // ── App state ────────────────────────────────────────────────
-let lastResult = null; // last checkAnswer() result, used by Parent view
+let lastResult = null; // last checkAnswer() result, used by Parent + Teacher views
 
-// ── Students data (25 simulated) ────────────────────────────
+// ── Students data (25 students: Raka + 24 simulated) ────────
+// level: 'understands'(12) | 'partly'(9) | 'needs_help'(3) | 'not_done'(1)
+// reason: short note shown under the name in the Teacher view
+// Raka is always index 0; his level & reason are updated live from lastResult.
 const STUDENTS = [
-  { name: 'Raka',    level: 'understands',  talked: true  },
-  { name: 'Siti',    level: 'understands',  talked: false },
-  { name: 'Ayu',     level: 'understands',  talked: true  },
-  { name: 'Rizky',   level: 'partly',       talked: false },
-  { name: 'Putri',   level: 'understands',  talked: true  },
-  { name: 'Dewi',    level: 'needs_help',   talked: false },
-  { name: 'Fajar',   level: 'partly',       talked: false },
-  { name: 'Nur',     level: 'understands',  talked: true  },
-  { name: 'Bagas',   level: 'needs_help',   talked: false },
-  { name: 'Indah',   level: 'partly',       talked: false },
-  { name: 'Dimas',   level: 'understands',  talked: false },
-  { name: 'Wulan',   level: 'needs_help',   talked: true  },
-  { name: 'Adi',     level: 'partly',       talked: false },
-  { name: 'Rina',    level: 'understands',  talked: true  },
-  { name: 'Budi',    level: 'needs_help',   talked: false },
-  { name: 'Maya',    level: 'partly',       talked: false },
-  { name: 'Hasan',   level: 'needs_help',   talked: false },
-  { name: 'Lilis',   level: 'understands',  talked: true  },
-  { name: 'Yusuf',   level: 'partly',       talked: false },
-  { name: 'Tiara',   level: 'partly',       talked: true  },
-  { name: 'Galih',   level: 'needs_help',   talked: false },
-  { name: 'Serli',   level: 'understands',  talked: false },
-  { name: 'Rama',    level: 'partly',       talked: false },
-  { name: 'Fitri',   level: 'understands',  talked: true  },
-  { name: 'Eko',     level: 'needs_help',   talked: false },
+  // ── index 0: Raka — level/reason updated from Child tab ──
+  { name: 'Raka',    level: 'not_done',    talked: false, reason: { en: 'Has not started yet', id: 'Belum mulai' } },
+
+  // ── 11 more Understands ──
+  { name: 'Siti',    level: 'understands', talked: true,  reason: { en: 'Mentioned all organs', id: 'Semua organ disebutkan' } },
+  { name: 'Ayu',     level: 'understands', talked: false, reason: { en: 'Good explanation',     id: 'Penjelasan bagus' } },
+  { name: 'Putri',   level: 'understands', talked: true,  reason: { en: 'Clear and complete',   id: 'Jelas dan lengkap' } },
+  { name: 'Nur',     level: 'understands', talked: true,  reason: { en: 'Good explanation',     id: 'Penjelasan bagus' } },
+  { name: 'Dimas',   level: 'understands', talked: false, reason: { en: 'Named all 6 organs',   id: 'Semua 6 organ disebutkan' } },
+  { name: 'Rina',    level: 'understands', talked: true,  reason: { en: 'Clear and complete',   id: 'Jelas dan lengkap' } },
+  { name: 'Lilis',   level: 'understands', talked: true,  reason: { en: 'Good explanation',     id: 'Penjelasan bagus' } },
+  { name: 'Serli',   level: 'understands', talked: false, reason: { en: 'Named all 6 organs',   id: 'Semua 6 organ disebutkan' } },
+  { name: 'Fitri',   level: 'understands', talked: true,  reason: { en: 'Clear and complete',   id: 'Jelas dan lengkap' } },
+  { name: 'Hendra',  level: 'understands', talked: false, reason: { en: 'Good explanation',     id: 'Penjelasan bagus' } },
+  { name: 'Tari',    level: 'understands', talked: true,  reason: { en: 'Named all 6 organs',   id: 'Semua 6 organ disebutkan' } },
+
+  // ── 9 Partly understands ──
+  { name: 'Rizky',   level: 'partly',      talked: false, reason: { en: 'Missed: large intestine', id: 'Terlewat: usus besar' } },
+  { name: 'Fajar',   level: 'partly',      talked: false, reason: { en: 'Order needs work',        id: 'Urutan perlu diperbaiki' } },
+  { name: 'Indah',   level: 'partly',      talked: false, reason: { en: 'Missed: esophagus',       id: 'Terlewat: kerongkongan' } },
+  { name: 'Adi',     level: 'partly',      talked: false, reason: { en: 'Missed: large intestine', id: 'Terlewat: usus besar' } },
+  { name: 'Maya',    level: 'partly',      talked: false, reason: { en: 'Order needs work',        id: 'Urutan perlu diperbaiki' } },
+  { name: 'Yusuf',   level: 'partly',      talked: false, reason: { en: 'Missed: anus',            id: 'Terlewat: anus' } },
+  { name: 'Tiara',   level: 'partly',      talked: true,  reason: { en: 'Missed: esophagus',       id: 'Terlewat: kerongkongan' } },
+  { name: 'Rama',    level: 'partly',      talked: false, reason: { en: 'Missed: large intestine', id: 'Terlewat: usus besar' } },
+  { name: 'Dewi',    level: 'partly',      talked: false, reason: { en: 'Order needs work',        id: 'Urutan perlu diperbaiki' } },
+
+  // ── 3 Needs help ──
+  { name: 'Bagas',   level: 'needs_help',  talked: false, reason: { en: 'Missed: large intestine, esophagus', id: 'Terlewat: usus besar, kerongkongan' } },
+  { name: 'Wulan',   level: 'needs_help',  talked: false, reason: { en: 'Only named stomach',               id: 'Hanya menyebutkan lambung' } },
+  { name: 'Budi',    level: 'needs_help',  talked: false, reason: { en: 'Missed: large intestine, anus',    id: 'Terlewat: usus besar, anus' } },
 ];
 
 // ── View navigation ──────────────────────────────────────────
@@ -725,16 +735,44 @@ function showResult(result) {
   document.getElementById('score-bar-fill').style.background = barColor;
   document.getElementById('score-bar-pct').textContent = result.total + ' / 100';
 
-  // Hints
+  // Hints — built fresh here so language is always current
+  const hints = buildHints({
+    foundOrganIds:   result.foundOrganIds,
+    functionsMatched: result.functionsMatched,
+    correctPairs:    result.correctPairs,
+    matchedOrganObjs: RUBRIC.organs.filter(o => result.foundOrganIds.includes(o.id)),
+    conceptsMatched: result.conceptsMatched
+  });
   hintsDiv.innerHTML = '';
-  if (result.level !== 'understands' && result.hints.length > 0) {
-    result.hints.forEach(h => {
+  if (result.level !== 'understands' && hints.length > 0) {
+    hints.forEach(h => {
       const div = document.createElement('div');
       div.className = 'hint-item';
       div.textContent = h;
       hintsDiv.appendChild(div);
     });
   }
+
+  // Update Raka's Teacher entry with this result
+  const missingOrgans = RUBRIC.organs.filter(o => !result.foundOrganIds.includes(o.id));
+  let rakaReasonEn, rakaReasonId;
+  if (result.level === 'understands') {
+    rakaReasonEn = 'Good explanation';
+    rakaReasonId = 'Penjelasan bagus';
+  } else if (missingOrgans.length > 0) {
+    const names = missingOrgans.slice(0, 2);
+    rakaReasonEn = 'Missed: ' + names.map(o => o.en_name).join(', ');
+    rakaReasonId = 'Terlewat: ' + names.map(o => o.id_name).join(', ');
+    if (result.correctPairs < (result.foundOrganIds.length > 1 ? result.foundOrganIds.length - 1 : 0)) {
+      rakaReasonEn += '; order needs work';
+      rakaReasonId += '; urutan perlu diperbaiki';
+    }
+  } else {
+    rakaReasonEn = 'Order needs work';
+    rakaReasonId = 'Urutan perlu diperbaiki';
+  }
+  STUDENTS[0].level  = result.level;
+  STUDENTS[0].reason = { en: rakaReasonEn, id: rakaReasonId };
 
   // Score breakdown (hidden by default, toggle via "Show details")
   const breakdown = document.getElementById('score-breakdown');
@@ -802,47 +840,102 @@ function getLevelLabel(level) {
   const L = LANG[currentLang];
   if (level === 'understands') return L.lvlUnderstands;
   if (level === 'partly')      return L.lvlPartly;
+  if (level === 'not_done')    return L.lvlNotDone;
   return L.lvlNeedsHelp;
 }
 
 function getLevelClass(level) {
   if (level === 'understands') return 'badge-understands';
   if (level === 'partly')      return 'badge-partly';
+  if (level === 'not_done')    return 'badge-not-done';
   return 'badge-needs-help';
 }
 
 function cycleLevel(idx) {
-  const order = ['needs_help', 'partly', 'understands'];
+  const order = ['not_done', 'needs_help', 'partly', 'understands'];
   const cur = STUDENTS[idx].level;
   const next = order[(order.indexOf(cur) + 1) % order.length];
   STUDENTS[idx].level = next;
   renderTeacher();
 }
 
+// Compute "most often missed" organ across the class
+function getMostMissed() {
+  const counts = {}; // organ id → count of students who missed it
+  RUBRIC.organs.forEach(o => { counts[o.id] = 0; });
+
+  // For simulated students we read the reason text to infer missed organs
+  // For Raka we use lastResult directly
+  STUDENTS.forEach((s, idx) => {
+    if (s.level === 'understands' || s.level === 'not_done') return;
+    if (idx === 0 && lastResult) {
+      // Raka: use actual rubric data
+      RUBRIC.organs.forEach(o => {
+        if (!lastResult.foundOrganIds.includes(o.id)) counts[o.id]++;
+      });
+    } else {
+      // Simulated: parse English reason string "Missed: X, Y"
+      const m = s.reason.en.match(/Missed:\s*(.+)/i);
+      if (m) {
+        m[1].split(',').forEach(part => {
+          const name = part.replace(/;.*$/, '').trim().toLowerCase();
+          const organ = RUBRIC.organs.find(o => o.en_name.toLowerCase() === name);
+          if (organ) counts[organ.id]++;
+        });
+      }
+    }
+  });
+
+  let topId = null, topCount = 0;
+  Object.entries(counts).forEach(([id, n]) => {
+    if (n > topCount) { topCount = n; topId = id; }
+  });
+  return topId ? RUBRIC.organs.find(o => o.id === topId) : null;
+}
+
 function renderTeacher() {
   const L = LANG[currentLang];
 
-  // Needs-help section
+  // ── Summary line ──
+  const mostMissed = getMostMissed();
+  const summaryEl = document.getElementById('teacher-summary');
+  if (mostMissed) {
+    const organName = currentLang === 'id' ? mostMissed.id_name : mostMissed.en_name;
+    summaryEl.textContent = L.teacherSummary.replace('{organ}', organName);
+    summaryEl.style.display = '';
+  } else {
+    summaryEl.style.display = 'none';
+  }
+
+  // ── Needs-help section: needs_help + not_done ──
   const nhList = document.getElementById('needs-help-list');
-  const needsHelp = STUDENTS.filter(s => s.level === 'needs_help');
-  if (needsHelp.length === 0) {
+  const priority = STUDENTS.filter(s => s.level === 'needs_help' || s.level === 'not_done');
+  if (priority.length === 0) {
     nhList.innerHTML = `<p style="color:#8b2e0e;font-size:0.9rem;">${L.noNeedsHelp}</p>`;
   } else {
-    nhList.innerHTML = needsHelp.map((s, _) => {
+    nhList.innerHTML = priority.map(s => {
       const idx = STUDENTS.indexOf(s);
+      const reasonText = s.reason[currentLang];
       return `<div class="student-row">
-        <span class="student-name">${s.name}</span>
-        <span class="badge badge-needs-help badge-clickable" onclick="cycleLevel(${idx})">${getLevelLabel(s.level)}</span>
+        <span class="student-name-block">
+          <span class="student-name">${s.name}</span>
+          <span class="student-reason">${reasonText}</span>
+        </span>
+        <span class="badge ${getLevelClass(s.level)} badge-clickable" onclick="cycleLevel(${idx})">${getLevelLabel(s.level)}</span>
       </div>`;
     }).join('');
   }
 
-  // All students list
+  // ── All students list ──
   const allList = document.getElementById('all-students-list');
   allList.innerHTML = STUDENTS.map((s, idx) => {
-    const talked = s.talked ? `<span style="font-size:0.75rem;color:var(--teal);margin-left:6px;">${L.talkedYes}</span>` : '';
+    const talked = s.talked ? `<span style="font-size:0.75rem;color:var(--teal);margin-left:4px;">${L.talkedYes}</span>` : '';
+    const reasonText = s.reason[currentLang];
     return `<div class="student-row">
-      <span class="student-name">${s.name}${talked}</span>
+      <span class="student-name-block">
+        <span class="student-name">${s.name}${talked}</span>
+        <span class="student-reason">${reasonText}</span>
+      </span>
       <span class="badge ${getLevelClass(s.level)} badge-clickable" onclick="cycleLevel(${idx})">${getLevelLabel(s.level)}</span>
     </div>`;
   }).join('');
