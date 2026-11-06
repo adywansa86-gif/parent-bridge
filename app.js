@@ -16,10 +16,11 @@ const LANG = {
     langBtn:    'ID',
 
     // Child view — lesson
-    lessonTitle:   'The Journey of Food',
-    lessonNote:    'In the full app, this lesson comes from the Wansa Universe games.',
-    readyBtn:      "I'm ready to explain!",
-    readAgainBtn:  'Read the lesson again',
+    lessonTitle:     'The Journey of Food',
+    lessonNote:      'In the full app, this lesson comes from the Wansa Universe games.',
+    lessonHelperNote:'The liver, gallbladder and pancreas are helper organs.',
+    readyBtn:        "I'm ready to explain!",
+    readAgainBtn:    'Read the lesson again',
     lessonCards: [
       { emoji: '👄', organ: 'Mouth',            fact: 'Teeth chew the food and saliva makes it soft.' },
       { emoji: '🫁', organ: 'Esophagus',        fact: 'It pushes the food down to the stomach.' },
@@ -105,10 +106,11 @@ const LANG = {
     langBtn:    'EN',
 
     // Child view — lesson
-    lessonTitle:   'Perjalanan Makanan',
-    lessonNote:    'Di aplikasi lengkap, materi ini berasal dari permainan Wansa Universe.',
-    readyBtn:      'Aku siap menjelaskan!',
-    readAgainBtn:  'Baca materi lagi',
+    lessonTitle:     'Perjalanan Makanan',
+    lessonNote:      'Di aplikasi lengkap, materi ini berasal dari permainan Wansa Universe.',
+    lessonHelperNote:'Hati, kantong empedu, dan pankreas adalah organ pembantu.',
+    readyBtn:        'Aku siap menjelaskan!',
+    readAgainBtn:    'Baca materi lagi',
     lessonCards: [
       { emoji: '👄', organ: 'Mulut',          fact: 'Gigi mengunyah makanan dan air liur membuatnya lunak.' },
       { emoji: '🫁', organ: 'Kerongkongan',   fact: 'Kerongkongan mendorong makanan turun ke lambung.' },
@@ -186,6 +188,28 @@ const LANG = {
     talkedYes:      '✅ sudah bicara',
     talkedNo:       '',
   }
+};
+
+// ── Lesson image paths — edit here to swap icons or change to .png ──
+const LESSON_IMAGES = {
+  diagram: 'images/digestive-system.png',
+  icons: [
+    'images/1-mouth.svg',
+    'images/2-esophagus.svg',
+    'images/3-stomach.svg',
+    'images/4-small-intestine.svg',
+    'images/5-large-intestine.svg',
+    'images/6-anus.svg',
+  ],
+  // Badge positions on the diagram image [left%, top%]
+  badgePositions: [
+    [29, 12],  // 1 Mouth
+    [51, 25],  // 2 Esophagus
+    [69, 41],  // 3 Stomach
+    [51, 68],  // 4 Small intestine
+    [88, 64],  // 5 Large intestine
+    [49, 95],  // 6 Anus
+  ],
 };
 
 // ── Rubric data (exact, do not modify) ──────────────────────
@@ -537,6 +561,18 @@ function renderLesson() {
   document.getElementById('lesson-note').textContent  = L.lessonNote;
   document.getElementById('ready-btn').textContent    = L.readyBtn;
 
+  // ── Diagram with numbered overlay badges ──────────────────
+  const diagramWrap = document.getElementById('lesson-diagram');
+  diagramWrap.innerHTML =
+    `<div class="lesson-diagram-wrap">` +
+      `<img src="${LESSON_IMAGES.diagram}" class="lesson-diagram-img" alt="Digestive system diagram" />` +
+      LESSON_IMAGES.badgePositions.map((pos, i) =>
+        `<span class="lesson-diagram-badge" style="left:${pos[0]}%;top:${pos[1]}%;">${i + 1}</span>`
+      ).join('') +
+    `</div>` +
+    `<p class="lesson-helper-note">${L.lessonHelperNote}</p>`;
+
+  // ── Organ cards with icons ─────────────────────────────────
   const grid = document.getElementById('lesson-cards');
   grid.innerHTML = '';
   L.lessonCards.forEach((c, i) => {
@@ -550,6 +586,7 @@ function renderLesson() {
     card.className = 'lesson-card';
     card.innerHTML =
       `<span class="lesson-card-number">${i + 1}</span>` +
+      `<img src="${LESSON_IMAGES.icons[i]}" class="lesson-card-icon" alt="" />` +
       `<span class="lesson-card-body">` +
         `<span class="lesson-card-organ">${c.organ}</span>` +
         `<span class="lesson-card-fact">${c.fact}</span>` +

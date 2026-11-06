@@ -286,6 +286,46 @@ main { flex: 1; padding: 20px 16px; max-width: 480px; width: 100%; margin: 0 aut
   margin-bottom: 14px;
   text-align: center;
 }
+/* Diagram */
+.lesson-diagram-wrap {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto 6px;
+}
+.lesson-diagram-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+}
+.lesson-diagram-badge {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--navy);
+  color: #fff;
+  border: 2px solid #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.35);
+}
+.lesson-helper-note {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-style: italic;
+  text-align: center;
+  margin: 0 0 16px;
+}
+
+/* Cards */
 .lesson-grid {
   display: flex;
   flex-direction: column;
@@ -296,30 +336,36 @@ main { flex: 1; padding: 20px 16px; max-width: 480px; width: 100%; margin: 0 aut
   background: var(--cream);
   border: 1.5px solid #e0dbd0;
   border-radius: 12px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
 }
 .lesson-card-number {
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: var(--orange);
   color: #fff;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 1px;
+}
+.lesson-card-icon {
+  flex-shrink: 0;
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
 }
 .lesson-card-body {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  flex: 1;
 }
 .lesson-card-organ {
   font-size: 0.9rem;
