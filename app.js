@@ -71,23 +71,25 @@ const LANG = {
     // Parent view
     parentHelper: 'A message for you about your child\'s learning today.',
     parentChildName: 'Raka',
+    parentAskLabel:    'Tonight, ask:',
+    parentAnswerLabel: 'Answer:',
     parentMsgUnderstands: [
       '{name} explained the full journey of food through the body clearly, mentioning the key organs and what they do.',
       '{name} is still working on using the scientific words (like "nutrients" and "digestion") fluently.',
-      'Tonight, ask: "Can you show me where each part of your digestive system is?"',
-      'Answer: point to your belly — mouth → throat → stomach → small intestine → large intestine → and out through the anus.'
+      '"Can you show me where each part of your digestive system is?"',
+      'Point to your belly — mouth → throat → stomach → small intestine → large intestine → and out through the anus.'
     ],
     parentMsgPartly: [
       '{name} explained some parts of the digestive system today — good start!',
       '{name} is still learning the order that food travels and what all the organs do.',
-      'Tonight, ask: "Can you name all the organs food passes through?"',
-      'Answer: mouth → esophagus → stomach → small intestine → large intestine → anus.'
+      '"Can you name all the organs food passes through?"',
+      'Mouth → esophagus → stomach → small intestine → large intestine → anus.'
     ],
     parentMsgNeedsHelp: [
       '{name} is just starting to learn about how the body digests food.',
       '{name} needs more practice naming the organs and explaining what they do.',
-      'Tonight, ask: "Do you know what happens to food after you swallow it?"',
-      'Answer: it goes down the esophagus to the stomach, then the intestines absorb the good parts, and the rest comes out as waste.'
+      '"Do you know what happens to food after you swallow it?"',
+      'It goes down the esophagus to the stomach, then the intestines absorb the good parts, and the rest comes out as waste.'
     ],
     notDoneMsg: 'Raka has not finished today\'s learning mission yet.',
     talkedBtn:  '✅ We talked about it',
@@ -170,23 +172,25 @@ const LANG = {
     // Parent view
     parentHelper: 'Pesan untukmu tentang belajar anakmu hari ini.',
     parentChildName: 'Raka',
+    parentAskLabel:    'Malam ini, tanyakan:',
+    parentAnswerLabel: 'Jawaban:',
     parentMsgUnderstands: [
       '{name} sudah bisa menjelaskan perjalanan makanan dalam tubuh dengan baik, menyebutkan organ-organ penting dan fungsinya.',
       '{name} masih berlatih menggunakan kata-kata ilmiah seperti "nutrisi" dan "pencernaan" dengan lancar.',
-      'Malam ini, tanya: "Bisa tunjukkan di mana saja organ pencernaan di tubuhmu?"',
-      'Jawabannya: tunjuk perutmu — mulut → kerongkongan → lambung → usus halus → usus besar → dan keluar lewat anus.'
+      '"Bisa tunjukkan di mana saja organ pencernaan di tubuhmu?"',
+      'Tunjuk perutmu — mulut → kerongkongan → lambung → usus halus → usus besar → dan keluar lewat anus.'
     ],
     parentMsgPartly: [
       '{name} sudah bisa menjelaskan sebagian sistem pencernaan hari ini — awal yang bagus!',
       '{name} masih belajar urutan perjalanan makanan dan fungsi semua organ.',
-      'Malam ini, tanya: "Bisakah kamu sebutkan semua organ yang dilalui makanan?"',
-      'Jawabannya: mulut → kerongkongan → lambung → usus halus → usus besar → anus.'
+      '"Bisakah kamu sebutkan semua organ yang dilalui makanan?"',
+      'Mulut → kerongkongan → lambung → usus halus → usus besar → anus.'
     ],
     parentMsgNeedsHelp: [
       '{name} baru mulai belajar bagaimana tubuh mencerna makanan.',
       '{name} perlu lebih banyak latihan menyebutkan organ dan menjelaskan fungsinya.',
-      'Malam ini, tanya: "Kamu tahu tidak, makanan pergi ke mana setelah ditelan?"',
-      'Jawabannya: makanan turun lewat kerongkongan ke lambung, lalu usus menyerap bagian baiknya, dan sisanya keluar sebagai kotoran.'
+      '"Kamu tahu tidak, makanan pergi ke mana setelah ditelan?"',
+      'Makanan turun lewat kerongkongan ke lambung, lalu usus menyerap bagian baiknya, dan sisanya keluar sebagai kotoran.'
     ],
     notDoneMsg: 'Raka belum menyelesaikan misi belajar hari ini.',
     talkedBtn:  '✅ Sudah kami bicarakan',
@@ -911,10 +915,11 @@ function renderParent() {
     bubbleLines = msgArr.map(s => s.replace('{name}', name));
   }
 
-  // Index [3] is the answer hint — styled differently
+  // Index [2] = tonight's question, index [3] = answer — prepend labels
   bubble.innerHTML = bubbleLines.map((text, i) => {
     if (!text) return '';
-    if (i === 3) return `<p class="parent-answer-hint">${text}</p>`;
+    if (i === 2) return `<p><strong>${L.parentAskLabel}</strong> ${text}</p>`;
+    if (i === 3) return `<p class="parent-answer-hint"><strong>${L.parentAnswerLabel}</strong> ${text}</p>`;
     return `<p>${text}</p>`;
   }).join('');
 
