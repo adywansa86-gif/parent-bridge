@@ -238,17 +238,29 @@ const LESSON_IMAGES = {
 const RUBRIC = {
   organs: [
     { id: 'mouth',          id_name: 'mulut',        en_name: 'mouth',            bodyOrder: 0, names: ['mulut','mouth'],
-      function_words: ['kunyah','unyah','gigi','liur','ludah','chew','teeth','saliva'] },
+      function_words: ['kunyah','unyah','gigi','liur','ludah','chew','teeth','saliva'],
+      fact_en: 'In the mouth, teeth chew the food and saliva makes it soft.',
+      fact_id: 'Di mulut, gigi mengunyah makanan dan air liur membuatnya lunak.' },
     { id: 'esophagus',      id_name: 'kerongkongan', en_name: 'esophagus',        bodyOrder: 1, names: ['kerongkongan','esofagus','esophagus','oesophagus','food pipe','gullet'],
-      function_words: ['dorong','salur','nyalur','remas','push','carr','mov','squeez','send'] },
+      function_words: ['dorong','salur','nyalur','remas','push','carr','mov','squeez','send'],
+      fact_en: 'The esophagus is a tube that pushes the food down to the stomach.',
+      fact_id: 'Kerongkongan adalah saluran yang mendorong makanan turun ke lambung.' },
     { id: 'stomach',        id_name: 'lambung',      en_name: 'stomach',          bodyOrder: 2, names: ['lambung','stomach'],
-      function_words: ['asam','aduk','hancur','bubur','acid','churn','mix','break','mash'] },
+      function_words: ['asam','aduk','hancur','bubur','acid','churn','mix','break','mash'],
+      fact_en: 'In the stomach, acid breaks the food down and churns it into a soft mush.',
+      fact_id: 'Di lambung, asam lambung menghancurkan dan mengaduk makanan menjadi seperti bubur.' },
     { id: 'small_intestine',id_name: 'usus halus',   en_name: 'small intestine',  bodyOrder: 3, names: ['usus halus','small intestine'],
-      function_words: ['serap','nyerap','sari','nutrisi','gizi','absorb','nutrient'] },
+      function_words: ['serap','nyerap','sari','nutrisi','gizi','absorb','nutrient'],
+      fact_en: 'In the small intestine, the body absorbs the nutrients from the food.',
+      fact_id: 'Di usus halus, sari-sari makanan diserap oleh tubuh.' },
     { id: 'large_intestine',id_name: 'usus besar',   en_name: 'large intestine',  bodyOrder: 4, names: ['usus besar','large intestine','colon'],
-      function_words: ['air','feses','kotoran','tinja','water','waste','poop','feces'] },
+      function_words: ['air','feses','kotoran','tinja','water','waste','poop','feces'],
+      fact_en: 'In the large intestine, water is absorbed and the rest becomes waste.',
+      fact_id: 'Di usus besar, air diserap dan sisanya menjadi kotoran.' },
     { id: 'anus',           id_name: 'anus',         en_name: 'anus',             bodyOrder: 5, names: ['anus','dubur','rectum'],
-      function_words: ['keluar','buang','out','leave'] },
+      function_words: ['keluar','buang','out','leave'],
+      fact_en: 'The waste leaves the body through the anus.',
+      fact_id: 'Sisa makanan dikeluarkan dari tubuh melalui anus.' },
   ],
   concepts: [
     { id: 'digest',    words: ['cerna','digest'] },
@@ -410,6 +422,118 @@ function buildHints({ foundOrganIds, functionsMatched, correctPairs, matchedOrga
 
   return hints.slice(0, 2);
 }
+
+// ── Offline template helpers (mirrors worker/worker.js logic) ──────────────
+// These produce the same hints and parent message as the Worker's template
+// fallback, so online and offline give identical results when the AI is not used.
+
+/**
+ * Derive gap / orderProblem / organsMissing from a checkAnswer() result.
+ * gap = { id, type: 'missing'|'function' } — first organ in body order that
+ *   is either not mentioned at all, or mentioned but not explained.
+ */
+function computeGap(result) {
+  const { foundOrganIds, functionsMatched, correctPairs } = result;
+  const matchedCount = foundOrganIds.length;
+  const orderProblem = matchedCount > 1 && correctPairs < matchedCount - 1;
+  const organsMissing = RUBRIC.organs.map(o => o.id).filter(id => !foundOrganIds.includes(id));
+
+  let gap = null;
+  for (const o of RUBRIC.organs) {
+    if (!foundOrganIds.includes(o.id)) { gap = { id: o.id, type: 'missing' }; break; }
+    if (o.id !== 'anus' && !functionsMatched.includes(o.id)) { gap = { id: o.id, type: 'function' }; break; }
+  }
+
+  return { gap, orderProblem, organsMissing };
+}
+
+/** Return the organ name in the current UI language. */
+function offlineOrganName(organ) {
+  return currentLang === 'id' ? organ.id_name : organ.en_name;
+}
+
+/**
+ * Build up to 2 hint strings matching worker templateHints() logic.
+ * Uses the gap and orderProblem from computeGap().
+ */
+function offlineTemplateHints(result) {
+  const { gap, orderProblem } = computeGap(result);
+  const id = currentLang === 'id';
+
+  if (result.level === 'understands' && !gap && !orderProblem) {
+    return [id
+      ? 'Luar biasa! Kamu bisa menjelaskan seluruh perjalanan makanan.'
+      : 'Amazing! You explained the whole journey of food.'];
+  }
+
+  const hints = [];
+  if (gap) {
+    const o    = RUBRIC.organs.find(x => x.id === gap.id);
+    const idx  = RUBRIC.organs.indexOf(o);
+    const prev = idx > 0 ? RUBRIC.organs[idx - 1] : null;
+    if (gap.type === 'function') {
+      hints.push(id
+        ? `Kamu sudah menyebut ${offlineOrganName(o)}. Apa yang terjadi pada makanan di sana?`
+        : `You mentioned the ${offlineOrganName(o)}. What happens to the food there?`);
+    } else if (!prev) {
+      hints.push(id ? 'Makanan masuk ke tubuh lewat mana?' : 'Where does food enter the body?');
+    } else {
+      hints.push(id
+        ? `Hebat! Setelah dari ${offlineOrganName(prev)}, makanan pergi ke mana?`
+        : `Great job! After the ${offlineOrganName(prev)}, where does the food go next?`);
+    }
+  }
+  if (hints.length < 2 && orderProblem) {
+    hints.push(id
+      ? 'Coba periksa urutannya. Organ mana yang dilewati makanan lebih dulu?'
+      : 'Check the order again. Which organ does the food pass through first?');
+  }
+  return hints.slice(0, 2);
+}
+
+/**
+ * Build the structured parent message matching worker templateParent() logic.
+ * Returns { learned, still_learning, question, answer } — same shape as the
+ * Worker's parent field, ready to be consumed by renderParent().
+ */
+function offlineTemplateParent(result) {
+  const name = LANG[currentLang].parentChildName;
+  const { gap } = computeGap(result);
+  const id = currentLang === 'id';
+
+  if (!gap) {
+    return id
+      ? { learned: `Hari ini ${name} belajar tentang pencernaan dan bisa menjelaskan seluruh perjalanan makanan.`,
+          still_learning: '',
+          question: 'Kenapa kita perlu mengunyah makanan?',
+          answer: 'Supaya makanan menjadi kecil dan lunak, sehingga lebih mudah dicerna.' }
+      : { learned: `Today ${name} learned about digestion and can explain the whole journey of food.`,
+          still_learning: '',
+          question: 'Why do we need to chew our food?',
+          answer: 'To make the food small and soft, so it is easier to digest.' };
+  }
+
+  const o    = RUBRIC.organs.find(x => x.id === gap.id);
+  const here = offlineOrganName(o);
+  const fact = id ? o.fact_id : o.fact_en;
+  const learned = result.foundOrganIds.length
+    ? (id ? `Hari ini ${name} belajar tentang pencernaan makanan.`
+           : `Today ${name} learned about digestion.`)
+    : (id ? `Hari ini ${name} mulai belajar tentang pencernaan makanan.`
+           : `Today ${name} started learning about digestion.`);
+
+  return id
+    ? { learned,
+        still_learning: `${name} masih belajar tentang ${here}.`,
+        question: `Apa yang terjadi pada makanan di ${here}?`,
+        answer: fact }
+    : { learned,
+        still_learning: `${name} is still learning about the ${here}.`,
+        question: `What happens to food in the ${here}?`,
+        answer: fact };
+}
+
+
 
 // ── Inline test assertions ───────────────────────────────────
 (function runTests() {
@@ -798,16 +922,11 @@ function showResult(result) {
   document.getElementById('score-bar-fill').style.background = barColor;
   document.getElementById('score-bar-pct').textContent = result.total + ' / 100';
 
-  // Hints — use AI Worker hints if available, else build locally
+  // Hints — use AI Worker hints if available, else use offline template
+  // (offlineTemplateHints mirrors worker templateHints() for consistency)
   const hints = (lastAiResult && Array.isArray(lastAiResult.hints) && lastAiResult.hints.length)
     ? lastAiResult.hints
-    : buildHints({
-        foundOrganIds:    result.foundOrganIds,
-        functionsMatched: result.functionsMatched,
-        correctPairs:     result.correctPairs,
-        matchedOrganObjs: RUBRIC.organs.filter(o => result.foundOrganIds.includes(o.id)),
-        conceptsMatched:  result.conceptsMatched
-      });
+    : offlineTemplateHints(result);
   hintsDiv.innerHTML = '';
   if (result.level !== 'understands' && hints.length > 0) {
     hints.forEach(h => {
@@ -852,8 +971,11 @@ function showResult(result) {
   }
   STUDENTS[0].level  = result.level;
   STUDENTS[0].reason = { en: rakaReasonEn, id: rakaReasonId };
-  // Store next_to_learn from worker for Teacher view
-  STUDENTS[0].nextToLearn = lastAiResult ? lastAiResult.next_to_learn : null;
+  // Store next_to_learn for Teacher view — from worker when online, computeGap when offline
+  const gapInfo = computeGap(result);
+  STUDENTS[0].nextToLearn = lastAiResult
+    ? lastAiResult.next_to_learn
+    : (gapInfo.gap ? gapInfo.gap.id : null);
 
   // Score breakdown (hidden by default, toggle via "Show details")
   const breakdown = document.getElementById('score-breakdown');
@@ -907,12 +1029,9 @@ function renderParent() {
       p.answer         || ''
     ];
   } else {
-    // Offline / template fallback
-    const level = lastResult.level;
-    const msgArr = level === 'understands' ? L.parentMsgUnderstands
-                 : level === 'partly'      ? L.parentMsgPartly
-                 :                          L.parentMsgNeedsHelp;
-    bubbleLines = msgArr.map(s => s.replace('{name}', name));
+    // Offline — use offlineTemplateParent() which mirrors worker templateParent()
+    const p = offlineTemplateParent(lastResult);
+    bubbleLines = [p.learned || '', p.still_learning || '', p.question || '', p.answer || ''];
   }
 
   // Index [2] = tonight's question, index [3] = answer — prepend labels
