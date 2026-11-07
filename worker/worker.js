@@ -221,7 +221,6 @@ function buildPrompt(r, lang, name) {
 - Child's name: ${name}
 - Result: ${r.level === "understands" ? "understands" : r.level === "partly" ? "partly understands" : "needs help"}
 - Organs the child explained well: ${nm(r.organs_with_function)}
-- Organs the child mentioned: ${nm(r.organs_mentioned)}
 - Organs not mentioned yet: ${nm(r.organs_missing)}
 - Order of organs is ${r.order_problem ? "NOT correct yet" : "fine"}
 - Next thing to learn: ${gapText}
@@ -308,7 +307,10 @@ async function check(env, answer, lang, name) {
         // so the parent always gets correct and matching information.
         const learned = str(ai.parent_learned).replace(/\bdigesti\b/gi, lang === "id" ? "pencernaan" : "digestion");
         const start = lang === "id" ? "hari ini " + name.toLowerCase() : "today " + name.toLowerCase();
-        if (looksOk(learned, 180) && learned.toLowerCase().startsWith(start)) parent.learned = learned;
+        // The praise sentence must not mention organs the child is still learning
+        const notYet = ORGANS.filter((o) => !r.organs_with_function.includes(o.id) && o.id !== "anus");
+        const mentionsNotYet = notYet.some((o) => o.names.some((n) => wholeWord(n, learned.toLowerCase()) >= 0));
+        if (looksOk(learned, 180) && learned.toLowerCase().startsWith(start) && !mentionsNotYet) parent.learned = learned;
         feedbackSource = "ai";
       }
     } catch (e) {
