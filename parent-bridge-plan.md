@@ -1,7 +1,7 @@
 # Parent Bridge — App Reference
 
 > **Wansa Learning Universe · Wansa School, South Halmahera**
-> Last updated: November 2026
+> Last updated: November 2026 · AI Worker integration complete
 
 ---
 
@@ -11,7 +11,8 @@ Parent Bridge is a mobile-first offline prototype that demonstrates one complete
 
 A child reads a short lesson, then explains the topic in their own words. The app checks the answer against a keyword rubric (no AI yet), gives a level badge and up to two hints, and generates a bilingual WhatsApp-style message for the parent. A Teacher view shows the whole class at a glance.
 
-**Works by opening `index.html` in any browser — no server, no internet required.**
+**Works by opening `index.html` in any browser — no server required.**
+When online, answers are sent to the AI Worker (IBM Granite via Cloudflare Workers AI) for personalised hints and a parent message. When offline or on timeout, the local rubric engine runs silently as the fallback.
 English ↔ Indonesian toggle applies instantly to all UI text, parent messages, and hints.
 
 ---
@@ -23,9 +24,14 @@ Parent Bridge/
 ├── index.html               — page shell, three view sections, navigation
 ├── style.css                — mobile-first styles, color tokens, all components
 ├── app.js                   — all logic: i18n, lesson data, rubric engine,
-│                              parent message builder, teacher data, view rendering
+│                              AI Worker client, parent message builder,
+│                              teacher data, view rendering
 ├── parent-bridge-plan.md    — this file
 ├── .gitignore               — excludes .bob/ and IBM Certificate.pdf
+│
+├── worker/
+│   └── worker.js            — Cloudflare Worker: rubric engine + IBM Granite
+│                              for personalised hints and parent message
 │
 └── images/
     ├── digestive-system.png — diagram shown in the lesson panel with overlay badges
@@ -217,24 +223,22 @@ All 8 answers verified ✅ by inline `runTests()` in `app.js` (runs silently on 
 |---|---|---|
 | Architecture | Vanilla JS, no framework | No build step; works by double-clicking the file |
 | Rubric engine | Keyword-based, bilingual arrays | Fast, offline, no API; sufficient for prototype |
+| AI Worker | Cloudflare Worker + IBM Granite (`@cf/ibm-granite/granite-4.0-h-micro`) | Warm, personal hints + structured parent message; rubric keeps scores consistent |
+| Offline fallback | `callWorker()` returns `null` on timeout (8 s) or error | App shows "Checked offline" and uses local `buildHints()` automatically |
 | Language toggle | `currentLang` var + `data-i18n` attributes + `LANG` object | One place to edit any string |
-| Hints | Built fresh in `showResult()`, not stored in the result object | Ensures hints always reflect the current UI language |
+| Hints | AI Worker hints used when available; `buildHints()` as fallback | Ensures hints always reflect current language even when re-rendered |
 | Image paths / badge positions | Single `LESSON_IMAGES` constant in `app.js` | Easy to swap icons or adjust positions in one place |
 | Raka in Teacher tab | `STUDENTS[0]` updated by `showResult()` on every answer check | Live round-trip: Child tab answer appears immediately in Teacher view |
 | Student reasons | Bilingual `{ en, id }` object on each student | Shown under the name; used by `getMostMissed()` to compute the summary |
 | "Most often missed" | `getMostMissed()` parses real rubric data for Raka, reason strings for simulated students | Avoids storing a full rubric result for every simulated student |
+| `next_to_learn` in Teacher | Stored on `STUDENTS[0].nextToLearn` from worker response | Teacher sees which organ Raka should study next, alongside his level |
 
 ---
 
 ## What is still to do
 
-### 1. Replace the rubric engine with a real AI model
-The keyword rubric is a placeholder. The production app will send the child's text to an AI model (e.g. IBM watsonx, or a fine-tuned model hosted on Wansa servers) that:
-- Understands paraphrases ("the tube that connects your mouth to your stomach" → esophagus)
-- Handles mixed-language sentences naturally
-- Returns a structured score object with the same shape as `checkAnswer()` today, so the rest of the app needs no changes
-
-The swap point is the `checkAnswer()` function in `app.js`. Everything else reads from its return value.
+### 1. Improve AI paraphrase understanding
+The Worker currently scores with the same keyword rubric as the offline engine, so paraphrases ("the tube that connects your mouth to your stomach") may not score the organ. The next step is to send the rubric result *and* the raw answer text to Granite and ask it to identify organs described indirectly — then apply a bonus or override to the score.
 
 ### 2. Add more topics
 The digestive system is topic 1. The same lesson/question/rubric pattern can be reused for other Grade 4 topics (e.g. the food chain, the water cycle).

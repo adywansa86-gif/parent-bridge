@@ -15,6 +15,12 @@ const LANG = {
     tabTeacher: 'Teacher',
     langBtn:    'ID',
 
+    // AI / offline labels
+    thinking:       'Thinking…',
+    checkedOffline: 'Checked offline',
+    aiLabel:        'Feedback by IBM Granite',
+    rubricLabel:    "Scored by the teacher's rubric",
+
     // Child view — lesson
     lessonTitle:     'The Journey of Food',
     lessonNote:      'In the full app, this lesson comes from the Wansa Universe games.',
@@ -106,6 +112,12 @@ const LANG = {
     tabParent:  'Orang Tua',
     tabTeacher: 'Guru',
     langBtn:    'EN',
+
+    // AI / offline labels
+    thinking:       'Memeriksa…',
+    checkedOffline: 'Diperiksa offline',
+    aiLabel:        'Umpan balik oleh IBM Granite',
+    rubricLabel:    'Dinilai menggunakan rubrik guru',
 
     // Child view — lesson
     lessonTitle:     'Perjalanan Makanan',
@@ -486,8 +498,37 @@ const SAMPLES = {
   }
 };
 
+// ── AI Worker ────────────────────────────────────────────────
+const AI_WORKER_URL = 'https://parent-bridge-ai.awansa.workers.dev';
+const AI_TIMEOUT_MS = 8000;
+
+/**
+ * POST the child's answer to the AI Worker.
+ * Returns the parsed response object, or null on network error / timeout.
+ */
+async function callWorker(text) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
+  try {
+    const res = await fetch(AI_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answer: text, lang: currentLang, childName: 'Raka' }),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.ok ? data : null;
+  } catch {
+    clearTimeout(timer);
+    return null;
+  }
+}
+
 // ── App state ────────────────────────────────────────────────
-let lastResult = null; // last checkAnswer() result, used by Parent + Teacher views
+let lastResult   = null; // last checkAnswer() result, used everywhere
+let lastAiResult = null; // last successful Worker response (hints, parent, next_to_learn)
 
 // ── Students data (25 students: Raka + 24 simulated) ────────
 // level: 'understands'(12) | 'partly'(9) | 'needs_help'(3) | 'not_done'(1)
@@ -546,6 +587,7 @@ function toggleLang() {
   renderParent();
   renderTeacher();
   // If a result is currently showing in the child view, re-render it
+  // lastAiResult already contains the worker fields; no need to re-call the worker
   if (lastResult) showResult(lastResult);
 }
 
@@ -647,11 +689,25 @@ function initChildView() {
     ta.focus();
   });
 
-  // Check button — always visible, always re-runs on current text
-  btn.addEventListener('click', () => {
+  // Check button — calls AI Worker, falls back to local rubric on error/timeout
+  btn.addEventListener('click', async () => {
     const text = ta.value.trim();
     if (!text) return;
-    lastResult = checkAnswer(text);
+
+    // Show "Thinking…" while we wait for the worker
+    const origLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = LANG[currentLang].thinking;
+
+    const workerData = await callWorker(text);
+
+    btn.disabled = false;
+    btn.textContent = origLabel;
+
+    // Always score locally — the worker uses the same rubric, so results match
+    lastResult   = checkAnswer(text);
+    lastAiResult = workerData; // null if offline/error
+
     showResult(lastResult);
   });
 
@@ -706,7 +762,8 @@ function clearResult() {
   document.getElementById('result-area').style.display  = 'none';
   document.getElementById('retry-row').style.display    = 'none';
   document.getElementById('read-again-btn').style.display = 'none';
-  lastResult = null;
+  lastResult   = null;
+  lastAiResult = null;
 }
 
 function showResult(result) {
@@ -735,14 +792,16 @@ function showResult(result) {
   document.getElementById('score-bar-fill').style.background = barColor;
   document.getElementById('score-bar-pct').textContent = result.total + ' / 100';
 
-  // Hints — built fresh here so language is always current
-  const hints = buildHints({
-    foundOrganIds:   result.foundOrganIds,
-    functionsMatched: result.functionsMatched,
-    correctPairs:    result.correctPairs,
-    matchedOrganObjs: RUBRIC.organs.filter(o => result.foundOrganIds.includes(o.id)),
-    conceptsMatched: result.conceptsMatched
-  });
+  // Hints — use AI Worker hints if available, else build locally
+  const hints = (lastAiResult && Array.isArray(lastAiResult.hints) && lastAiResult.hints.length)
+    ? lastAiResult.hints
+    : buildHints({
+        foundOrganIds:    result.foundOrganIds,
+        functionsMatched: result.functionsMatched,
+        correctPairs:     result.correctPairs,
+        matchedOrganObjs: RUBRIC.organs.filter(o => result.foundOrganIds.includes(o.id)),
+        conceptsMatched:  result.conceptsMatched
+      });
   hintsDiv.innerHTML = '';
   if (result.level !== 'understands' && hints.length > 0) {
     hints.forEach(h => {
@@ -752,6 +811,20 @@ function showResult(result) {
       hintsDiv.appendChild(div);
     });
   }
+
+  // "Feedback by IBM Granite" label (shown when worker returned feedback:"ai")
+  // "Checked offline" label (shown when worker was not reached)
+  const existingFeedbackLabel = document.getElementById('ai-feedback-label');
+  if (existingFeedbackLabel) existingFeedbackLabel.remove();
+  const feedbackLabel = document.createElement('div');
+  feedbackLabel.id = 'ai-feedback-label';
+  feedbackLabel.style.cssText = 'font-size:0.75rem;color:var(--muted);margin-top:6px;';
+  if (lastAiResult && lastAiResult.feedback === 'ai') {
+    feedbackLabel.textContent = L.aiLabel;
+  } else if (!lastAiResult) {
+    feedbackLabel.textContent = L.checkedOffline;
+  }
+  if (feedbackLabel.textContent) hintsDiv.after(feedbackLabel);
 
   // Update Raka's Teacher entry with this result
   const missingOrgans = RUBRIC.organs.filter(o => !result.foundOrganIds.includes(o.id));
@@ -773,6 +846,8 @@ function showResult(result) {
   }
   STUDENTS[0].level  = result.level;
   STUDENTS[0].reason = { en: rakaReasonEn, id: rakaReasonId };
+  // Store next_to_learn from worker for Teacher view
+  STUDENTS[0].nextToLearn = lastAiResult ? lastAiResult.next_to_learn : null;
 
   // Score breakdown (hidden by default, toggle via "Show details")
   const breakdown = document.getElementById('score-breakdown');
@@ -780,7 +855,8 @@ function showResult(result) {
     `<span>🫁 ${L.detailOrgans}: ${result.organsScore}/20</span>` +
     `<span>⚙️ ${L.detailFunctions}: ${result.functionsScore}/30</span>` +
     `<span>↕️ ${L.detailOrder}: ${result.orderScore}/30</span>` +
-    `<span>💡 ${L.detailConcepts}: ${result.conceptsScore}/20</span>`;
+    `<span>💡 ${L.detailConcepts}: ${result.conceptsScore}/20</span>` +
+    `<span style="grid-column:1/-1;font-size:0.72rem;color:var(--muted);margin-top:4px;">📋 ${L.rubricLabel}</span>`;
   breakdown.style.display = 'none';
   document.getElementById('show-details-btn').textContent = L.showDetails;
 
@@ -797,14 +873,29 @@ function renderParent() {
   const name = L.parentChildName;
   // Use lastResult if available; otherwise default to 'partly' for demo
   const level = lastResult ? lastResult.level : 'partly';
-  const msgArr = level === 'understands' ? L.parentMsgUnderstands
-               : level === 'partly'      ? L.parentMsgPartly
-               :                          L.parentMsgNeedsHelp;
+
+  let bubbleLines;
+  if (lastAiResult && lastAiResult.parent) {
+    // Worker returned structured parent fields — use them directly
+    const p = lastAiResult.parent;
+    bubbleLines = [
+      p.learned       || '',
+      p.still_learning|| '',
+      p.question      || '',
+      p.answer        || ''
+    ];
+  } else {
+    // Offline / template fallback
+    const msgArr = level === 'understands' ? L.parentMsgUnderstands
+                 : level === 'partly'      ? L.parentMsgPartly
+                 :                          L.parentMsgNeedsHelp;
+    bubbleLines = msgArr.map(s => s.replace('{name}', name));
+  }
 
   const bubble = document.getElementById('wa-bubble');
-  // First 3 items are normal sentences; index [3] is the answer hint — styled differently
-  bubble.innerHTML = msgArr.map((s, i) => {
-    const text = s.replace('{name}', name);
+  // Index [3] is the answer hint — styled differently
+  bubble.innerHTML = bubbleLines.map((text, i) => {
+    if (!text) return '';
     if (i === 3) {
       return `<p class="parent-answer-hint">${text}</p>`;
     }
@@ -915,7 +1006,15 @@ function renderTeacher() {
   } else {
     nhList.innerHTML = priority.map(s => {
       const idx = STUDENTS.indexOf(s);
-      const reasonText = s.reason[currentLang];
+      let reasonText = s.reason[currentLang];
+      if (idx === 0 && s.nextToLearn) {
+        const nextOrgan = RUBRIC.organs.find(o => o.id === s.nextToLearn);
+        if (nextOrgan) {
+          const nextName = currentLang === 'id' ? nextOrgan.id_name : nextOrgan.en_name;
+          const nextLabel = currentLang === 'id' ? `· Berikutnya: ${nextName}` : `· Next: ${nextName}`;
+          reasonText = reasonText ? `${reasonText} ${nextLabel}` : nextLabel;
+        }
+      }
       return `<div class="student-row">
         <span class="student-name-block">
           <span class="student-name">${s.name}</span>
@@ -930,7 +1029,18 @@ function renderTeacher() {
   const allList = document.getElementById('all-students-list');
   allList.innerHTML = STUDENTS.map((s, idx) => {
     const talked = s.talked ? `<span style="font-size:0.75rem;color:var(--teal);margin-left:4px;">${L.talkedYes}</span>` : '';
-    const reasonText = s.reason[currentLang];
+    let reasonText = s.reason[currentLang];
+    // For Raka, append next_to_learn from the worker when available
+    if (idx === 0 && s.nextToLearn) {
+      const nextOrgan = RUBRIC.organs.find(o => o.id === s.nextToLearn);
+      if (nextOrgan) {
+        const nextName = currentLang === 'id' ? nextOrgan.id_name : nextOrgan.en_name;
+        const nextLabel = currentLang === 'id'
+          ? `· Berikutnya: ${nextName}`
+          : `· Next: ${nextName}`;
+        reasonText = reasonText ? `${reasonText} ${nextLabel}` : nextLabel;
+      }
+    }
     return `<div class="student-row">
       <span class="student-name-block">
         <span class="student-name">${s.name}${talked}</span>
