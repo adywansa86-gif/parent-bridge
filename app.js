@@ -80,8 +80,8 @@ const LANG = {
     parentMsgPartly: [
       '{name} explained some parts of the digestive system today — good start!',
       '{name} is still learning the order that food travels and what all the organs do.',
-      'Tonight, ask: "Which part of the body do you think does the most work?"',
-      'Answer: the small intestine — it absorbs all the nutrients from food so the body can use them.'
+      'Tonight, ask: "Can you name all the organs food passes through?"',
+      'Answer: mouth → esophagus → stomach → small intestine → large intestine → anus.'
     ],
     parentMsgNeedsHelp: [
       '{name} is just starting to learn about how the body digests food.',
@@ -89,6 +89,7 @@ const LANG = {
       'Tonight, ask: "Do you know what happens to food after you swallow it?"',
       'Answer: it goes down the esophagus to the stomach, then the intestines absorb the good parts, and the rest comes out as waste.'
     ],
+    notDoneMsg: 'Raka has not finished today\'s learning mission yet.',
     talkedBtn:  '✅ We talked about it',
     notYetBtn:  '⏰ Not yet',
     thanksMsg:  'Thank you! Every conversation helps. 💛',
@@ -178,8 +179,8 @@ const LANG = {
     parentMsgPartly: [
       '{name} sudah bisa menjelaskan sebagian sistem pencernaan hari ini — awal yang bagus!',
       '{name} masih belajar urutan perjalanan makanan dan fungsi semua organ.',
-      'Malam ini, tanya: "Menurutmu, bagian tubuh mana yang paling banyak bekerja?"',
-      'Jawabannya: usus halus — di sana sari makanan diserap agar tubuh bisa menggunakannya.'
+      'Malam ini, tanya: "Bisakah kamu sebutkan semua organ yang dilalui makanan?"',
+      'Jawabannya: mulut → kerongkongan → lambung → usus halus → usus besar → anus.'
     ],
     parentMsgNeedsHelp: [
       '{name} baru mulai belajar bagaimana tubuh mencerna makanan.',
@@ -187,6 +188,7 @@ const LANG = {
       'Malam ini, tanya: "Kamu tahu tidak, makanan pergi ke mana setelah ditelan?"',
       'Jawabannya: makanan turun lewat kerongkongan ke lambung, lalu usus menyerap bagian baiknya, dan sisanya keluar sebagai kotoran.'
     ],
+    notDoneMsg: 'Raka belum menyelesaikan misi belajar hari ini.',
     talkedBtn:  '✅ Sudah kami bicarakan',
     notYetBtn:  '⏰ Belum sempat',
     thanksMsg:  'Terima kasih! Setiap obrolan sangat berarti. 💛',
@@ -871,42 +873,52 @@ function showResult(result) {
 function renderParent() {
   const L = LANG[currentLang];
   const name = L.parentChildName;
-  // Use lastResult if available; otherwise default to 'partly' for demo
-  const level = lastResult ? lastResult.level : 'partly';
+
+  const bubble  = document.getElementById('wa-bubble');
+  const talkedBtn = document.getElementById('talked-btn');
+  const notYetBtn = document.getElementById('notyet-btn');
+  const conf      = document.getElementById('confirmation-text');
+
+  // ── No result yet: show placeholder, hide action buttons ──
+  if (!lastResult) {
+    bubble.innerHTML = `<p style="color:var(--muted);font-style:italic;">${L.notDoneMsg}</p>`;
+    talkedBtn.style.display = 'none';
+    notYetBtn.style.display = 'none';
+    conf.textContent = '';
+    return;
+  }
+
+  // ── Result available: show message ──
+  talkedBtn.style.display = '';
+  notYetBtn.style.display = '';
 
   let bubbleLines;
   if (lastAiResult && lastAiResult.parent) {
     // Worker returned structured parent fields — use them directly
     const p = lastAiResult.parent;
     bubbleLines = [
-      p.learned       || '',
-      p.still_learning|| '',
-      p.question      || '',
-      p.answer        || ''
+      p.learned        || '',
+      p.still_learning || '',
+      p.question       || '',
+      p.answer         || ''
     ];
   } else {
     // Offline / template fallback
+    const level = lastResult.level;
     const msgArr = level === 'understands' ? L.parentMsgUnderstands
                  : level === 'partly'      ? L.parentMsgPartly
                  :                          L.parentMsgNeedsHelp;
     bubbleLines = msgArr.map(s => s.replace('{name}', name));
   }
 
-  const bubble = document.getElementById('wa-bubble');
   // Index [3] is the answer hint — styled differently
   bubble.innerHTML = bubbleLines.map((text, i) => {
     if (!text) return '';
-    if (i === 3) {
-      return `<p class="parent-answer-hint">${text}</p>`;
-    }
+    if (i === 3) return `<p class="parent-answer-hint">${text}</p>`;
     return `<p>${text}</p>`;
   }).join('');
 
-  // Reset buttons
-  const talkedBtn = document.getElementById('talked-btn');
-  const notYetBtn = document.getElementById('notyet-btn');
-  const conf = document.getElementById('confirmation-text');
-
+  // Restore button state (in case previously hidden)
   talkedBtn.textContent = L.talkedBtn;
   notYetBtn.textContent = L.notYetBtn;
   talkedBtn.disabled = false;
@@ -915,14 +927,18 @@ function renderParent() {
 
   // Re-attach handlers (fresh render)
   talkedBtn.onclick = () => {
+    STUDENTS[0].talked = true;
     conf.textContent = L.thanksMsg;
     talkedBtn.disabled = true;
     notYetBtn.disabled = true;
+    renderTeacher();
   };
   notYetBtn.onclick = () => {
+    STUDENTS[0].talked = false;
     conf.textContent = L.thanksMsg;
     talkedBtn.disabled = true;
     notYetBtn.disabled = true;
+    renderTeacher();
   };
 }
 
