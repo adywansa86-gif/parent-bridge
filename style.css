@@ -473,6 +473,13 @@ main { flex: 1; padding: 20px 16px; max-width: 480px; width: 100%; margin: 0 aut
   color: var(--muted);
   line-height: 1.45;
 }
+.voice-preview {
+  display: none;
+  font-size: 0.8rem;
+  color: #888;
+  font-style: italic;
+  margin-top: 4px;
+}
 .voice-error {
   display: none;
   font-size: 0.82rem;

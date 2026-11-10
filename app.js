@@ -827,35 +827,40 @@ function refreshChildLang() {
 }
 
 // ── Voice Answer (Web Speech API) ────────────────────────────
-let voiceRecognition  = null; // SpeechRecognition instance
-let voiceListening    = false;
+let voiceRecognition   = null; // SpeechRecognition instance
+let voiceListening     = false;
 let voiceAutoStopTimer = null;
-const VOICE_MAX_MS    = 60000; // 60-second auto-stop
+let voiceUserStopped   = false; // true when user pressed Stop → do not restart
+const VOICE_MAX_MS     = 60000; // 60-second auto-stop
 
 function initVoiceAnswer() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const voiceBtn  = document.getElementById('voice-btn');
-  const voiceNote = document.getElementById('voice-note');
-  const voiceErr  = document.getElementById('voice-error');
-  const voiceInd  = document.getElementById('voice-indicator');
-  const ta        = document.getElementById('answer-ta');
+  const voiceBtn     = document.getElementById('voice-btn');
+  const voiceNote    = document.getElementById('voice-note');
+  const voiceErr     = document.getElementById('voice-error');
+  const voiceInd     = document.getElementById('voice-indicator');
+  const voicePrev    = document.getElementById('voice-preview');
+  const ta           = document.getElementById('answer-ta');
 
   // Browser does not support Web Speech API
   if (!SpeechRecognition) {
-    voiceBtn.style.display = 'none';
+    voiceBtn.style.display  = 'none';
     voiceNote.style.display = 'none';
-    voiceErr.textContent  = LANG[currentLang].voiceErrBrowser;
-    voiceErr.style.display = '';
+    voiceErr.textContent    = LANG[currentLang].voiceErrBrowser;
+    voiceErr.style.display  = '';
     return;
   }
 
   voiceBtn.addEventListener('click', () => {
     if (voiceListening) {
-      stopVoice();
+      stopVoice(false /* fromError */);
     } else {
       startVoice();
     }
   });
+
+  // sessionFinal: the final text from the current short recognition session
+  let sessionFinal = '';
 
   function startVoice() {
     // Check connectivity
@@ -865,29 +870,38 @@ function initVoiceAnswer() {
     }
 
     voiceRecognition = new SpeechRecognition();
-    voiceRecognition.lang          = currentLang === 'id' ? 'id-ID' : 'en-US';
+    voiceRecognition.lang           = currentLang === 'id' ? 'id-ID' : 'en-US';
+    // Android fix: continuous=false avoids growing partial phrases being appended
+    // repeatedly. We restart manually in onend so the child can keep talking.
+    voiceRecognition.continuous     = false;
     voiceRecognition.interimResults = true;
-    voiceRecognition.continuous     = true;
-
-    let finalTranscript = '';
 
     voiceRecognition.onstart = () => {
       voiceListening = true;
       clearVoiceError();
       setVoiceBtnState('listening');
 
-      // Auto-stop after 60 s
-      voiceAutoStopTimer = setTimeout(() => {
-        if (voiceListening) stopVoice();
-      }, VOICE_MAX_MS);
+      // Auto-stop after 60 s from the very first start
+      if (!voiceAutoStopTimer) {
+        voiceAutoStopTimer = setTimeout(() => {
+          if (voiceListening) stopVoice(false);
+        }, VOICE_MAX_MS);
+      }
     };
 
     voiceRecognition.onresult = (e) => {
-      finalTranscript = '';
-      for (let i = 0; i < e.results.length; i++) {
-        if (e.results[i].isFinal) {
-          finalTranscript += e.results[i][0].transcript;
-        }
+      // Only look at the latest result (avoids accumulating partial phrases)
+      const r = e.results[e.results.length - 1];
+      if (r.isFinal) {
+        // REPLACE sessionFinal — never append within a session
+        sessionFinal = r[0].transcript.trim();
+        // Clear the interim preview now that we have a final result
+        voicePrev.textContent  = '';
+        voicePrev.style.display = 'none';
+      } else {
+        // Show interim text in the preview line only — never touch the textarea
+        voicePrev.textContent  = 'Listening: ' + r[0].transcript;
+        voicePrev.style.display = '';
       }
     };
 
@@ -906,18 +920,39 @@ function initVoiceAnswer() {
     };
 
     voiceRecognition.onend = () => {
-      // Append final transcript to textarea (add a space separator if needed)
-      if (finalTranscript.trim()) {
-        const existing = ta.value;
-        ta.value = existing
-          ? existing.trimEnd() + ' ' + finalTranscript.trim()
-          : finalTranscript.trim();
-        // Trigger the clearResult listener to hide stale results
-        ta.dispatchEvent(new Event('input'));
+      // Commit sessionFinal to the textarea exactly once per session
+      if (sessionFinal) {
+        const existing = ta.value.trimEnd();
+        // Safety: do not append if the textarea already ends with this sentence
+        if (!existing.endsWith(sessionFinal)) {
+          ta.value = existing ? existing + ' ' + sessionFinal : sessionFinal;
+          ta.dispatchEvent(new Event('input'));
+        }
+        sessionFinal = '';
       }
-      setVoiceBtnState('idle');
-      voiceListening = false;
-      clearTimeout(voiceAutoStopTimer);
+      // Clear the interim preview
+      voicePrev.textContent  = '';
+      voicePrev.style.display = 'none';
+
+      // If the user pressed Stop (or 60 s elapsed), shut down completely
+      if (voiceUserStopped) {
+        voiceListening = false;
+        voiceUserStopped = false;
+        clearTimeout(voiceAutoStopTimer);
+        voiceAutoStopTimer = null;
+        setVoiceBtnState('idle');
+        return;
+      }
+
+      // Otherwise restart so the child can keep talking in short sentences
+      try {
+        voiceRecognition.start();
+      } catch (_) {
+        voiceListening = false;
+        clearTimeout(voiceAutoStopTimer);
+        voiceAutoStopTimer = null;
+        setVoiceBtnState('idle');
+      }
     };
 
     try {
@@ -928,12 +963,18 @@ function initVoiceAnswer() {
   }
 
   function stopVoice(fromError) {
+    voiceUserStopped = !fromError; // flag onend not to restart
     clearTimeout(voiceAutoStopTimer);
+    voiceAutoStopTimer = null;
     if (voiceRecognition && voiceListening) {
       try { voiceRecognition.stop(); } catch (_) {}
     }
     if (fromError) {
-      voiceListening = false;
+      voiceListening    = false;
+      voiceUserStopped  = false;
+      sessionFinal      = '';
+      voicePrev.textContent  = '';
+      voicePrev.style.display = 'none';
       setVoiceBtnState('idle');
     }
   }
@@ -942,23 +983,23 @@ function initVoiceAnswer() {
     const L = LANG[currentLang];
     if (state === 'listening') {
       voiceBtn.classList.add('voice-btn-listening');
-      voiceBtn.textContent      = L.voiceStopBtn;
-      voiceInd.textContent      = L.voiceListening;
-      voiceInd.style.display    = '';
+      voiceBtn.textContent   = L.voiceStopBtn;
+      voiceInd.textContent   = L.voiceListening;
+      voiceInd.style.display = '';
     } else {
       voiceBtn.classList.remove('voice-btn-listening');
-      voiceBtn.textContent      = L.voiceSpeakBtn;
-      voiceInd.style.display    = 'none';
+      voiceBtn.textContent   = L.voiceSpeakBtn;
+      voiceInd.style.display = 'none';
     }
   }
 
   function showVoiceError(msg) {
-    voiceErr.textContent  = msg;
+    voiceErr.textContent   = msg;
     voiceErr.style.display = '';
   }
 
   function clearVoiceError() {
-    voiceErr.textContent  = '';
+    voiceErr.textContent   = '';
     voiceErr.style.display = 'none';
   }
 
@@ -967,8 +1008,8 @@ function initVoiceAnswer() {
     if (!voiceListening) {
       voiceBtn.textContent = LANG[currentLang].voiceSpeakBtn;
     } else {
-      voiceBtn.textContent  = LANG[currentLang].voiceStopBtn;
-      voiceInd.textContent  = LANG[currentLang].voiceListening;
+      voiceBtn.textContent = LANG[currentLang].voiceStopBtn;
+      voiceInd.textContent = LANG[currentLang].voiceListening;
     }
     voiceNote.textContent = LANG[currentLang].voiceNote;
     // Update lang on active recognition

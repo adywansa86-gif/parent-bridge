@@ -87,15 +87,16 @@ Uses the browser **Web Speech API** (`window.SpeechRecognition || window.webkitS
 
 - **Button**: "🎤 Speak" (EN) / "🎤 Bicara" (ID). Teal, rounded, 48 px min-height (phone-friendly). Displayed below the textarea.
 - **Language**: `recognition.lang = 'id-ID'` when ID toggle is on, `'en-US'` when EN. Language updates immediately on toggle even mid-session.
-- **While listening**: button turns red ("⏹ Stop" / "⏹ Berhenti"), a pulsing "Listening…" / "Mendengarkan…" indicator appears. Auto-stops after 60 seconds.
-- **On stop**: the final transcript is **appended** to the existing textarea text (space-separated). The child can edit before pressing Check. No auto-submit.
+- **While listening**: button turns red ("⏹ Stop" / "⏹ Berhenti"), a pulsing "Listening…" / "Mendengarkan…" indicator appears. Auto-stops after 60 seconds. A small grey italic preview line ("Listening: …") shows interim text beneath the button.
+- **On stop**: each final sentence is **appended once** to the existing textarea text (space-separated). The child can edit before pressing Check. No auto-submit.
+- **Android fix (Chrome Android)**: `recognition.continuous = false` and `recognition.interimResults = true`. Interim results are shown only in the grey preview line — never written to the textarea. Only the latest result (`event.results[event.results.length - 1]`) is used; if `isFinal`, its transcript **replaces** `sessionFinal` (never appended within a session). In `onend`, `sessionFinal` is appended once to the textarea (with a duplicate-sentence guard), then `recognition.start()` is called again automatically so the child can keep talking in short sentences. When Stop is pressed, a `voiceUserStopped` flag prevents the restart.
 - **Privacy note** under button: "Your voice is turned into text. No recording is saved." / "Suaramu diubah menjadi tulisan. Rekaman tidak disimpan."
 - **Error handling** (friendly message, never crash):
   - Browser not supported → button hidden, note hidden, message shown: "Voice works in Chrome. Please type your answer."
   - Offline or `network` error → "Voice needs internet. Please type your answer."
   - `not-allowed` (mic blocked) → "Please allow the microphone, or type your answer."
   - `no-speech` → "I didn't hear anything. Try again?"
-- **Files changed**: `index.html` (voice button HTML), `style.css` (`.btn-voice`, `.voice-btn-listening`, `.voice-indicator` pulse, `.voice-note`, `.voice-error`), `app.js` (`initVoiceAnswer()`, LANG strings, `refreshChildLang` hook).
+- **Files changed**: `index.html` (voice button HTML, `#voice-preview` span), `style.css` (`.btn-voice`, `.voice-btn-listening`, `.voice-indicator` pulse, `.voice-note`, `.voice-preview`, `.voice-error`), `app.js` (`initVoiceAnswer()`, LANG strings, `refreshChildLang` hook).
 
 ### Parent tab
 - WhatsApp-style bubble with a 4-part message based on the child's latest level (defaults to "partly" if no answer yet).
