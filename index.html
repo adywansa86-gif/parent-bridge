@@ -49,6 +49,14 @@
         placeholder="Write your explanation here…"
         rows="6"></textarea>
 
+      <!-- Voice answer -->
+      <div class="voice-row">
+        <button id="voice-btn" class="btn-voice">🎤 Speak</button>
+        <span id="voice-indicator" class="voice-indicator"></span>
+        <span id="voice-note" class="voice-note">Your voice is turned into text. No recording is saved.</span>
+        <span id="voice-error" class="voice-error"></span>
+      </div>
+
       <div style="margin-top:12px;">
         <label style="font-size:0.82rem;color:var(--muted);" data-i18n="sampleLabel">Try a sample answer:</label>
         <select id="sample-select" class="sample-select">

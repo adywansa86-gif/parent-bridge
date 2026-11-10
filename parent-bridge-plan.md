@@ -75,10 +75,27 @@ Footer: *"Wansa School · Dari Halmahera, untuk dunia"*
 **Step 2 — Answer & check**
 - Helper text + question: "How does food travel through your body?"
 - Textarea (bilingual: English or Indonesian both accepted).
+- **Voice answer button** — "🎤 Speak" / "🎤 Bicara" — next to the textarea (see Voice answer section below).
 - "Try a sample answer" dropdown (4 samples, A–D).
 - "Check my answer ✓" button → runs the rubric engine → shows result.
 - Result area: level badge, progress bar (score / 100), up to 2 hint sentences, score breakdown grid (toggle).
 - "Try again" resets; "Read the lesson again" (shown only when level ≠ Understands) returns to the lesson panel.
+
+### Voice answer
+
+Uses the browser **Web Speech API** (`window.SpeechRecognition || window.webkitSpeechRecognition`) — no audio is stored or sent anywhere.
+
+- **Button**: "🎤 Speak" (EN) / "🎤 Bicara" (ID). Teal, rounded, 48 px min-height (phone-friendly). Displayed below the textarea.
+- **Language**: `recognition.lang = 'id-ID'` when ID toggle is on, `'en-US'` when EN. Language updates immediately on toggle even mid-session.
+- **While listening**: button turns red ("⏹ Stop" / "⏹ Berhenti"), a pulsing "Listening…" / "Mendengarkan…" indicator appears. Auto-stops after 60 seconds.
+- **On stop**: the final transcript is **appended** to the existing textarea text (space-separated). The child can edit before pressing Check. No auto-submit.
+- **Privacy note** under button: "Your voice is turned into text. No recording is saved." / "Suaramu diubah menjadi tulisan. Rekaman tidak disimpan."
+- **Error handling** (friendly message, never crash):
+  - Browser not supported → button hidden, note hidden, message shown: "Voice works in Chrome. Please type your answer."
+  - Offline or `network` error → "Voice needs internet. Please type your answer."
+  - `not-allowed` (mic blocked) → "Please allow the microphone, or type your answer."
+  - `no-speech` → "I didn't hear anything. Try again?"
+- **Files changed**: `index.html` (voice button HTML), `style.css` (`.btn-voice`, `.voice-btn-listening`, `.voice-indicator` pulse, `.voice-note`, `.voice-error`), `app.js` (`initVoiceAnswer()`, LANG strings, `refreshChildLang` hook).
 
 ### Parent tab
 - WhatsApp-style bubble with a 4-part message based on the child's latest level (defaults to "partly" if no answer yet).

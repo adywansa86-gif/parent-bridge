@@ -433,6 +433,56 @@ main { flex: 1; padding: 20px 16px; max-width: 480px; width: 100%; margin: 0 aut
 }
 
 
+/* ── Voice answer ── */
+.voice-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 10px;
+}
+.btn-voice {
+  background: var(--teal);
+  color: var(--white);
+  border-radius: 30px;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  min-height: 48px;
+  transition: background 0.2s, opacity 0.15s;
+}
+.btn-voice:hover { opacity: 0.88; }
+.voice-btn-listening {
+  background: #c0392b !important;
+}
+.voice-indicator {
+  display: none;
+  font-size: 0.8rem;
+  color: #c0392b;
+  font-weight: 600;
+  animation: voice-pulse 1.2s ease-in-out infinite;
+}
+@keyframes voice-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+.voice-note {
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+.voice-error {
+  display: none;
+  font-size: 0.82rem;
+  color: #8b2e0e;
+  background: #fde8e0;
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-top: 4px;
+}
+
 /* ── Footer ── */
 footer {
   text-align: center;

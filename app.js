@@ -42,6 +42,17 @@ const LANG = {
     placeholder:   'Write your explanation here…',
     checkBtn:      'Check my answer ✓',
     tryAgainBtn:   'Try again',
+
+    // Voice answer
+    voiceSpeakBtn:   '🎤 Speak',
+    voiceStopBtn:    '⏹ Stop',
+    voiceListening:  'Listening…',
+    voiceNote:       'Your voice is turned into text. No recording is saved.',
+    voiceErrBrowser: 'Voice works in Chrome. Please type your answer.',
+    voiceErrNetwork: 'Voice needs internet. Please type your answer.',
+    voiceErrMic:     'Please allow the microphone, or type your answer.',
+    voiceErrNoSpeech:'I didn\'t hear anything. Try again?',
+
     sampleLabel:   'Try a sample answer:',
     sampleDefault: '— choose a sample —',
     sampleA:       'Sample A (full answer)',
@@ -143,6 +154,17 @@ const LANG = {
     placeholder:   'Tulis penjelasanmu di sini…',
     checkBtn:      'Cek jawabanku ✓',
     tryAgainBtn:   'Coba lagi',
+
+    // Voice answer
+    voiceSpeakBtn:   '🎤 Bicara',
+    voiceStopBtn:    '⏹ Berhenti',
+    voiceListening:  'Mendengarkan…',
+    voiceNote:       'Suaramu diubah menjadi tulisan. Rekaman tidak disimpan.',
+    voiceErrBrowser: 'Fitur suara berjalan di Chrome. Silakan ketik jawabanmu.',
+    voiceErrNetwork: 'Suara butuh internet. Silakan ketik jawabanmu.',
+    voiceErrMic:     'Izinkan mikrofon, atau ketik jawabanmu.',
+    voiceErrNoSpeech:'Tidak terdengar suara. Coba lagi?',
+
     sampleLabel:   'Coba contoh jawaban:',
     sampleDefault: '— pilih contoh —',
     sampleA:       'Contoh A (jawaban lengkap)',
@@ -800,6 +822,164 @@ function refreshChildLang() {
   sel.options[2].text = L.sampleB;
   sel.options[3].text = L.sampleC;
   sel.options[4].text = L.sampleD;
+  // Update voice button text / note for new language
+  if (typeof window._refreshVoiceBtn === 'function') window._refreshVoiceBtn();
+}
+
+// ── Voice Answer (Web Speech API) ────────────────────────────
+let voiceRecognition  = null; // SpeechRecognition instance
+let voiceListening    = false;
+let voiceAutoStopTimer = null;
+const VOICE_MAX_MS    = 60000; // 60-second auto-stop
+
+function initVoiceAnswer() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const voiceBtn  = document.getElementById('voice-btn');
+  const voiceNote = document.getElementById('voice-note');
+  const voiceErr  = document.getElementById('voice-error');
+  const voiceInd  = document.getElementById('voice-indicator');
+  const ta        = document.getElementById('answer-ta');
+
+  // Browser does not support Web Speech API
+  if (!SpeechRecognition) {
+    voiceBtn.style.display = 'none';
+    voiceNote.style.display = 'none';
+    voiceErr.textContent  = LANG[currentLang].voiceErrBrowser;
+    voiceErr.style.display = '';
+    return;
+  }
+
+  voiceBtn.addEventListener('click', () => {
+    if (voiceListening) {
+      stopVoice();
+    } else {
+      startVoice();
+    }
+  });
+
+  function startVoice() {
+    // Check connectivity
+    if (!navigator.onLine) {
+      showVoiceError(LANG[currentLang].voiceErrNetwork);
+      return;
+    }
+
+    voiceRecognition = new SpeechRecognition();
+    voiceRecognition.lang          = currentLang === 'id' ? 'id-ID' : 'en-US';
+    voiceRecognition.interimResults = true;
+    voiceRecognition.continuous     = true;
+
+    let finalTranscript = '';
+
+    voiceRecognition.onstart = () => {
+      voiceListening = true;
+      clearVoiceError();
+      setVoiceBtnState('listening');
+
+      // Auto-stop after 60 s
+      voiceAutoStopTimer = setTimeout(() => {
+        if (voiceListening) stopVoice();
+      }, VOICE_MAX_MS);
+    };
+
+    voiceRecognition.onresult = (e) => {
+      finalTranscript = '';
+      for (let i = 0; i < e.results.length; i++) {
+        if (e.results[i].isFinal) {
+          finalTranscript += e.results[i][0].transcript;
+        }
+      }
+    };
+
+    voiceRecognition.onerror = (e) => {
+      stopVoice(true /* fromError */);
+      const L = LANG[currentLang];
+      if (e.error === 'not-allowed') {
+        showVoiceError(L.voiceErrMic);
+      } else if (e.error === 'no-speech') {
+        showVoiceError(L.voiceErrNoSpeech);
+      } else if (e.error === 'network') {
+        showVoiceError(L.voiceErrNetwork);
+      } else {
+        showVoiceError(L.voiceErrNetwork);
+      }
+    };
+
+    voiceRecognition.onend = () => {
+      // Append final transcript to textarea (add a space separator if needed)
+      if (finalTranscript.trim()) {
+        const existing = ta.value;
+        ta.value = existing
+          ? existing.trimEnd() + ' ' + finalTranscript.trim()
+          : finalTranscript.trim();
+        // Trigger the clearResult listener to hide stale results
+        ta.dispatchEvent(new Event('input'));
+      }
+      setVoiceBtnState('idle');
+      voiceListening = false;
+      clearTimeout(voiceAutoStopTimer);
+    };
+
+    try {
+      voiceRecognition.start();
+    } catch (err) {
+      showVoiceError(LANG[currentLang].voiceErrNetwork);
+    }
+  }
+
+  function stopVoice(fromError) {
+    clearTimeout(voiceAutoStopTimer);
+    if (voiceRecognition && voiceListening) {
+      try { voiceRecognition.stop(); } catch (_) {}
+    }
+    if (fromError) {
+      voiceListening = false;
+      setVoiceBtnState('idle');
+    }
+  }
+
+  function setVoiceBtnState(state) {
+    const L = LANG[currentLang];
+    if (state === 'listening') {
+      voiceBtn.classList.add('voice-btn-listening');
+      voiceBtn.textContent      = L.voiceStopBtn;
+      voiceInd.textContent      = L.voiceListening;
+      voiceInd.style.display    = '';
+    } else {
+      voiceBtn.classList.remove('voice-btn-listening');
+      voiceBtn.textContent      = L.voiceSpeakBtn;
+      voiceInd.style.display    = 'none';
+    }
+  }
+
+  function showVoiceError(msg) {
+    voiceErr.textContent  = msg;
+    voiceErr.style.display = '';
+  }
+
+  function clearVoiceError() {
+    voiceErr.textContent  = '';
+    voiceErr.style.display = 'none';
+  }
+
+  // Expose a refresh function for lang toggle
+  window._refreshVoiceBtn = () => {
+    if (!voiceListening) {
+      voiceBtn.textContent = LANG[currentLang].voiceSpeakBtn;
+    } else {
+      voiceBtn.textContent  = LANG[currentLang].voiceStopBtn;
+      voiceInd.textContent  = LANG[currentLang].voiceListening;
+    }
+    voiceNote.textContent = LANG[currentLang].voiceNote;
+    // Update lang on active recognition
+    if (voiceRecognition) {
+      voiceRecognition.lang = currentLang === 'id' ? 'id-ID' : 'en-US';
+    }
+    // Update browser-not-supported message if shown
+    if (!SpeechRecognition) {
+      voiceErr.textContent = LANG[currentLang].voiceErrBrowser;
+    }
+  };
 }
 
 function initChildView() {
@@ -886,6 +1066,9 @@ function initChildView() {
 
   // Initial render of the lesson panel
   renderLesson();
+
+  // Initialise voice answer feature
+  initVoiceAnswer();
 }
 
 function clearResult() {
