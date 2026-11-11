@@ -254,7 +254,9 @@ function buildPrompt(r, lang, name) {
 - Lesson fact about the next thing: ${fact || "-"}
 
 Write in ${L}. Return JSON with these keys:
-"child_hints": 1 or 2 short, friendly questions (one sentence each) for the child that point to the next thing to learn${r.order_problem ? " and ask the child to check the order" : ""}. Do not give the answer.
+"child_hints": ${gapOrgan
+    ? `1 or 2 short, friendly questions (one sentence each) for the child. Every question MUST contain the exact words "${organName(gapOrgan, lang)}" and ask what happens to the food in the ${organName(gapOrgan, lang)}${r.gap.type === "missing" ? ", or where the food goes before or after it" : ""}. Do not ask about any other organ.${r.order_problem ? " You may add one question asking the child to check the order of the organs." : ""} Do not give the answer.`
+    : "1 short, friendly sentence praising the child for explaining the whole journey of food."}
 "parent_learned": ONE short sentence to the parent, starting with "${lang === "id" ? "Hari ini " + name : "Today " + name}", praising what ${name} explained well. Use only the organ names listed above.`;
   return { system, user };
 }
@@ -267,6 +269,7 @@ function extractJson(text) {
   try { return JSON.parse(text.slice(start, end + 1)); } catch { return null; }
 }
 
+let lastRaw = null; // raw Granite reply, shown only with ?debug=1
 async function aiFeedback(env, r, lang, name) {
   const { system, user } = buildPrompt(r, lang, name);
   const reply = await env.AI.run(MODEL, {
@@ -278,6 +281,7 @@ async function aiFeedback(env, r, lang, name) {
     temperature: 0.3,
   });
   const text = typeof reply === "string" ? reply : reply?.response ?? reply?.choices?.[0]?.message?.content ?? "";
+  lastRaw = typeof text === "string" ? text.slice(0, 1500) : JSON.stringify(text).slice(0, 1500);
   return extractJson(typeof text === "string" ? text : JSON.stringify(text));
 }
 
@@ -293,7 +297,8 @@ function looksOk(s, max = 200, maxSentences = 1) {
   return true;
 }
 
-async function check(env, answer, lang, name) {
+async function check(env, answer, lang, name, debug = false) {
+  lastRaw = null;
   const r = scoreAnswer(answer);
   const fallbackHints = templateHints(r, lang);
   const fallbackParent = templateParent(r, lang, name);
@@ -301,6 +306,7 @@ async function check(env, answer, lang, name) {
   let hints = fallbackHints;
   let parent = { ...fallbackParent };
   let feedbackSource = "template";
+  let usedAi = false;
 
   if (env.AI && !r.list_like) {
     try {
@@ -310,18 +316,24 @@ async function check(env, answer, lang, name) {
         // or (if the order is wrong) about the order.
         const gapOrg = r.gap ? ORGANS.find((o) => o.id === r.gap.id) : null;
         const orderWordRe = /urutan|order|first|lebih dulu|duluan/i;
+        // A good hint is a question about the next organ only (no other organ),
+        // or, when the order is wrong, a question about the order.
+        const otherOrganNamed = (h) =>
+          ORGANS.some((o) => o !== gapOrg && o.names.some((n) => wholeWord(n, h.toLowerCase()) >= 0));
         const onTopic = (h) =>
           !gapOrg ||
-          gapOrg.names.some((n) => h.toLowerCase().includes(n)) ||
+          (gapOrg.names.some((n) => wholeWord(n, h.toLowerCase()) >= 0) && !otherOrganNamed(h) && h.trim().endsWith("?")) ||
           (r.order_problem && orderWordRe.test(h));
-        const aiHints = Array.isArray(ai.child_hints)
-          ? ai.child_hints
-              .map((h) => str(h, 200).replace(/\bdigesti\b/gi, lang === "id" ? "pencernaan" : "digestion"))
-              .filter((h) => looksOk(h, 160, 2) && onTopic(h))
-              .slice(0, 2)
-          : [];
+        // Granite sometimes returns one string with several sentences: check each sentence on its own
+        const rawHints = Array.isArray(ai.child_hints) ? ai.child_hints : typeof ai.child_hints === "string" ? [ai.child_hints] : [];
+        const aiHints = rawHints
+          .flatMap((h) => str(h, 400).split(/(?<=[.!?])\s+/))
+          .map((h) => h.trim().replace(/\bdigesti\b/gi, lang === "id" ? "pencernaan" : "digestion"))
+          .filter((h) => looksOk(h, 160, 1) && onTopic(h))
+          .slice(0, 2);
         if (aiHints.length) {
           hints = aiHints;
+          usedAi = true;
           // If the order is wrong, make sure one hint is about the order
           const orderWord = /urutan|order|first|lebih dulu|duluan/i;
           if (r.order_problem && !hints.some((h) => orderWord.test(h))) {
@@ -337,8 +349,12 @@ async function check(env, answer, lang, name) {
         // The praise sentence must not mention organs the child is still learning
         const notYet = ORGANS.filter((o) => !r.organs_with_function.includes(o.id) && o.id !== "anus");
         const mentionsNotYet = notYet.some((o) => o.names.some((n) => wholeWord(n, learned.toLowerCase()) >= 0));
-        if (looksOk(learned, 180) && learned.toLowerCase().startsWith(start) && !mentionsNotYet) parent.learned = learned;
-        feedbackSource = "ai";
+        if (looksOk(learned, 180) && learned.toLowerCase().startsWith(start) && !mentionsNotYet) {
+          parent.learned = learned;
+          usedAi = true;
+        }
+        // Only say "IBM Granite" when at least one Granite sentence is really shown
+        if (usedAi) feedbackSource = "ai";
       }
     } catch (e) {
       feedbackSource = "template";
@@ -356,6 +372,7 @@ async function check(env, answer, lang, name) {
     next_to_learn: gap ? gap.id : null,
     hints,
     parent,
+    ...(debug ? { debug_granite_raw: lastRaw } : {}),
   };
 }
 
@@ -366,6 +383,7 @@ export default {
     let answer = "";
     let lang = "en";
     let childName = "";
+    let debug = false;
 
     if (request.method === "POST") {
       let body = {};
@@ -380,6 +398,7 @@ export default {
       answer = url.searchParams.get("answer") || "";
       lang = url.searchParams.get("lang") === "id" ? "id" : "en";
       childName = str(url.searchParams.get("childName") || "", 40);
+      debug = url.searchParams.get("debug") === "1";
       if (!answer) {
         return json({ ok: true, message: "Parent Bridge AI is running. Add ?answer=... to test.", model: MODEL });
       }
@@ -390,6 +409,6 @@ export default {
     answer = answer.trim().slice(0, MAX_ANSWER_CHARS);
     if (answer.length < 3) return json({ ok: false, error: "Answer is empty" }, 400);
 
-    return json(await check(env, answer, lang, childName || "Raka"));
+    return json(await check(env, answer, lang, childName || "Raka", debug));
   },
 };

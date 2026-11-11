@@ -114,7 +114,7 @@ Uses the browser **Web Speech API** (`window.SpeechRecognition || window.webkitS
 
 ### Teacher tab
 - **Summary banner** at the top: "Most often missed today: [organ]" — computed live from all partly/needs-help students (Raka uses real rubric data; simulated students use parsed reason strings).
-- **Stats line** under the summary: "Talked at home: X/25 · Understands N · Partly N · Needs help N · Not done N" / "Sudah berdiskusi di rumah: X/25 · Paham N · Sebagian N · Perlu bantuan N · Belum N". Updates live when Raka's result or "We talked about it" changes.
+- **Stats line** under the summary: "Talked at home: X/{total} · Understands N · Partly N · Needs help N · Not done N" / "Sudah berdiskusi di rumah: X/{total} · Paham N · Sebagian N · Perlu bantuan N · Belum N". Updates live when Raka's result or "We talked about it" changes. `{total}` is `STUDENTS.length` (25).
 - **"Needs help today" section** (red background): shows all `needs_help` + `not_done` students, each with a short reason line under their name.
 - **All students list**: all 25 students with name, reason, level badge, and a ✅ talked indicator.
 - Tapping a level badge cycles it: Not done → Needs help → Partly → Understands. Raka's badge updates automatically whenever he checks an answer in the Child tab.
@@ -125,10 +125,11 @@ Uses the browser **Web Speech API** (`window.SpeechRecognition || window.webkitS
 
 | Level | Count | Students |
 |---|---|---|
-| Understands | 12 | Raka (live), Siti, Ayu, Putri, Nur, Dimas, Rina, Lilis, Serli, Fitri, Hendra, Tari |
+| Raka (live) | 1 | Starts as "Not done yet"; his level follows his latest answer in the Child tab |
+| Understands | 11 | Siti, Ayu, Putri, Nur, Dimas, Rina, Lilis, Serli, Fitri, Hendra, Tari |
 | Partly understands | 9 | Rizky, Fajar, Indah, Adi, Maya, Yusuf, Tiara, Rama, Dewi |
 | Needs help | 3 | Bagas, Wulan, Budi |
-| Not done yet | 1 | Raka (initial state before any answer is checked) |
+| Not done yet | 1 | Nadia |
 
 Raka is always index 0 in STUDENTS. His level and reason are overwritten by `showResult()` every time he checks an answer.
 
@@ -292,3 +293,13 @@ Child answers and Parent "talked" responses currently reset on page refresh. Add
 
 ### 5. Accessibility and broader device testing
 Test on low-end Android phones (common in South Halmahera). Verify font sizes, contrast ratios, and touch targets on small screens.
+
+---
+
+## AI Worker version (deployed)
+
+`worker/worker.js` = the version deployed on Cloudflare (`parent-bridge-ai`). It includes:
+- the list check (same rule as `app.js`),
+- a sentence-by-sentence check of Granite's hints: a hint is shown only if it is a question that names the next organ to learn and no other organ (or, when the order is wrong, a question about the order),
+- `feedback: "ai"` only when at least one Granite sentence is really shown,
+- `?debug=1` (GET) adds `debug_granite_raw` with Granite's raw reply, for testing.

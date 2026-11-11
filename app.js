@@ -123,7 +123,7 @@ const LANG = {
     lvlNeedsHelp:   'Needs help',
     lvlNotDone:     'Not done yet',
     teacherSummary: 'Most often missed today: {organ}',
-    teacherStats:   'Talked at home: {talked}/25 · Understands {u} · Partly {p} · Needs help {n} · Not done {nd}',
+    teacherStats:   'Talked at home: {talked}/{total} · Understands {u} · Partly {p} · Needs help {n} · Not done {nd}',
     talkedYes:      '✅ talked',
     talkedNo:       '',
 
@@ -246,7 +246,7 @@ const LANG = {
     lvlNeedsHelp:   'Perlu bantuan',
     lvlNotDone:     'Belum selesai',
     teacherSummary: 'Paling sering terlewat hari ini: {organ}',
-    teacherStats:   'Sudah berdiskusi di rumah: {talked}/25 · Paham {u} · Sebagian {p} · Perlu bantuan {n} · Belum {nd}',
+    teacherStats:   'Sudah berdiskusi di rumah: {talked}/{total} · Paham {u} · Sebagian {p} · Perlu bantuan {n} · Belum {nd}',
     talkedYes:      '✅ sudah bicara',
     talkedNo:       '',
 
@@ -790,6 +790,9 @@ const STUDENTS = [
   { name: 'Bagas',   level: 'needs_help',  talked: false, reason: { en: 'Missed: large intestine, esophagus', id: 'Terlewat: usus besar, kerongkongan' } },
   { name: 'Wulan',   level: 'needs_help',  talked: false, reason: { en: 'Only named stomach',               id: 'Hanya menyebutkan lambung' } },
   { name: 'Budi',    level: 'needs_help',  talked: false, reason: { en: 'Missed: large intestine, anus',    id: 'Terlewat: usus besar, anus' } },
+
+  // ── 1 Not done yet ──
+  { name: 'Nadia',   level: 'not_done',    talked: false, reason: { en: 'Has not started yet', id: 'Belum mulai' } },
 ];
 
 // ── View navigation ──────────────────────────────────────────
@@ -1482,6 +1485,7 @@ function renderTeacher() {
     const nd = STUDENTS.filter(s => s.level === 'not_done').length;
     statsEl.textContent = L.teacherStats
       .replace('{talked}', talked)
+      .replace('{total}', STUDENTS.length)
       .replace('{u}',  u)
       .replace('{p}',  p)
       .replace('{n}',  n)

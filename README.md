@@ -29,8 +29,9 @@ The child can answer in **English or Indonesian**. The whole app can switch betw
 
 1. **Scoring is done by a clear rubric**, not by AI guessing. The rubric checks organs named (20), functions explained (30), correct order (30), and key ideas (20). The same answer always gets the same score.
 2. **IBM Granite writes the words**: the hint for the child and the praise sentence for the parent. It runs on Cloudflare Workers AI (`@cf/ibm-granite/granite-4.0-h-micro`).
-3. **Safety checks**: every Granite sentence is checked before it is shown. Off-topic, wrong-science, or unsafe text is replaced with a safe template. The parent's "answer" always comes from the lesson facts, never from AI.
-4. **Offline fallback**: if there is no internet, the app scores the answer on the device and shows "Checked offline".
+3. **Safety checks**: every Granite sentence is checked before it is shown. Off-topic, wrong-science, or unsafe text is replaced with a safe template. The parent's "answer" always comes from the lesson facts, never from AI. Granite's text is checked sentence by sentence: only sentences about the right organ are shown, and the label "Feedback by IBM Granite" appears only when Granite text is really used.
+4. **Keyword lists do not get full marks**: an answer that only lists science words, without sentences, gets no points for functions or order, and the child is asked to explain in sentences.
+5. **Offline fallback**: if there is no internet, the app scores the answer on the device and shows "Checked offline".
 
 ## Voice answer
 
