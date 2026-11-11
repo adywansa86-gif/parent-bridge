@@ -3,3 +3,6 @@
 
 # Private document — do NOT push to GitHub
 IBM Certificate.pdf
+
+# Claude / AI output files — never commit
+Claude outputs/
