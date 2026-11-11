@@ -9,7 +9,7 @@
 
 Parent Bridge is a mobile-first offline prototype that demonstrates one complete learning loop for Grade 4 science: the human digestive system.
 
-A child reads a short lesson, then explains the topic in their own words. The app checks the answer against a keyword rubric (no AI yet), gives a level badge and up to two hints, and generates a bilingual WhatsApp-style message for the parent. A Teacher view shows the whole class at a glance.
+A child reads a short lesson, then explains the topic in their own words. The app checks the answer against a keyword rubric, gives a level badge and up to two hints, and generates a bilingual WhatsApp-style message for the parent. A Teacher view shows the whole class at a glance.
 
 **Works by opening `index.html` in any browser — no server required.**
 When online, answers are sent to the AI Worker (IBM Granite via Cloudflare Workers AI) for personalised hints and a parent message. When offline or on timeout, the local rubric engine runs silently as the fallback.
@@ -62,6 +62,13 @@ Footer: *"Wansa School · Dari Halmahera, untuk dunia"*
 
 ## App features
 
+### Demo guide card (Child tab, top)
+- A small dismissible card (✕ button), bilingual, shown above the lesson.
+  - EN: "Try the demo: 1) Learn and answer as a child (type or speak). 2) Open Parent to see tonight's message. 3) Open Teacher to see the class."
+  - ID: "Coba demonya: 1) Belajar dan jawab sebagai murid (ketik atau bicara). 2) Buka Orang Tua untuk melihat pesan malam ini. 3) Buka Guru untuk melihat kelas."
+- Additional note: "Demo uses simulated students only." / "Demo hanya memakai data siswa simulasi."
+- Dismissed permanently for the session when ✕ is tapped. Refreshes on language toggle.
+
 ### Child tab — two-step flow
 
 **Step 1 — Learn**
@@ -101,11 +108,13 @@ Uses the browser **Web Speech API** (`window.SpeechRecognition || window.webkitS
 ### Parent tab
 - WhatsApp-style bubble with a 4-part message based on the child's latest level (defaults to "partly" if no answer yet).
 - Message parts: what the child understood, what they are still working on, a dinner-table question, the answer hint (styled differently).
+- **🔊 Listen / 🔊 Dengarkan button** — reads the whole message aloud with `window.speechSynthesis` (`lang id-ID` or `en-US` following the toggle). Tap again to stop. Hidden if `speechSynthesis` is not supported or there is no result yet.
 - "✅ We talked about it" / "⏰ Not yet" buttons; both disabled after either is tapped.
 - Child name shown: **Raka**.
 
 ### Teacher tab
 - **Summary banner** at the top: "Most often missed today: [organ]" — computed live from all partly/needs-help students (Raka uses real rubric data; simulated students use parsed reason strings).
+- **Stats line** under the summary: "Talked at home: X/25 · Understands N · Partly N · Needs help N · Not done N" / "Sudah berdiskusi di rumah: X/25 · Paham N · Sebagian N · Perlu bantuan N · Belum N". Updates live when Raka's result or "We talked about it" changes.
 - **"Needs help today" section** (red background): shows all `needs_help` + `not_done` students, each with a short reason line under their name.
 - **All students list**: all 25 students with name, reason, level badge, and a ✅ talked indicator.
 - Tapping a level badge cycles it: Not done → Needs help → Partly → Understands. Raka's badge updates automatically whenever he checks an answer in the Child tab.
@@ -187,6 +196,11 @@ Raka is always index 0 in STUDENTS. His level and reason are overwritten by `sho
 ### Sentence splitting
 Split on `.` `!` `?` and newlines.
 
+### List check (keyword dump guard)
+An answer with **10 or more words** where **fewer than 12%** of words are non-rubric ("glue") words is treated as a keyword list, not an explanation. Rubric words are identified using `KEY_STEMS`: every stem from organ names, function words, and concept words that is ≥ 3 characters long (excluding "food", "pipe", "makanan"). A word counts as a rubric word if it **contains** any stem. When an answer is list-like: `functions = 0`, `order = 0`, `order_problem = false`, `list_like = true`. The only hint shown is:
+- EN: "You listed many words. Now explain in sentences: what happens to the food in the mouth?"
+- ID: "Kamu menyebut banyak kata. Sekarang jelaskan dengan kalimat: apa yang terjadi pada makanan di mulut?"
+
 ### Level thresholds
 | Score | EN label | ID label |
 |---|---|---|
@@ -198,7 +212,7 @@ Split on `.` `!` `?` and newlines.
 
 ## Test answers with expected scores
 
-All 8 answers verified ✅ by inline `runTests()` in `app.js` (runs silently on every page load; errors appear in the browser console).
+All 10 answers verified ✅ by inline `runTests()` in `app.js` (runs silently on every page load; errors appear in the browser console).
 
 | Test | Organs | Functions | Order | Concepts | **Total** | Level |
 |---|---|---|---|---|---|---|
@@ -206,6 +220,8 @@ All 8 answers verified ✅ by inline `runTests()` in `app.js` (runs silently on 
 | B | 13 | 18 | 18 | 12 | **61** | Partly understands |
 | C | 13 | 12 | 12 | 8 | **45** | Needs help |
 | D | 0 | 0 | 0 | 4 | **4** | Needs help |
+| LIST-EN (keyword dump) | 20 | 0 | 0 | 20 | **40** | Needs help |
+| LIST-ID (keyword dump) | 20 | 0 | 0 | 16 | **36** | Needs help |
 
 ### Full answer texts
 
@@ -233,6 +249,12 @@ All 8 answers verified ✅ by inline `runTests()` in `app.js` (runs silently on 
 **Sample D — score 4 (ID):**
 > Makanan dimakan lalu masuk ke perut terus jadi kotoran.
 
+**LIST-EN — score 40 (keyword dump, list-like):**
+> mouth teeth saliva esophagus push stomach acid small intestine absorb nutrients large intestine water anus out digest energy waste
+
+**LIST-ID — score 36 (keyword dump, list-like):**
+> mulut gigi kerongkongan dorong lambung asam usus halus serap sari makanan usus besar air anus keluar cerna energi
+
 ---
 
 ## Key technical decisions
@@ -241,6 +263,7 @@ All 8 answers verified ✅ by inline `runTests()` in `app.js` (runs silently on 
 |---|---|---|
 | Architecture | Vanilla JS, no framework | No build step; works by double-clicking the file |
 | Rubric engine | Keyword-based, bilingual arrays | Fast, offline, no API; sufficient for prototype |
+| List check | `KEY_STEMS` + `isListLike()` in both `app.js` and `worker.js` | Keyword dumps (10+ words, <12% glue) get functions=0 and order=0; same logic in worker and app |
 | AI Worker | Cloudflare Worker + IBM Granite (`@cf/ibm-granite/granite-4.0-h-micro`) | Warm, personal hints + structured parent message; rubric keeps scores consistent |
 | Offline fallback | `callWorker()` returns `null` on timeout (8 s) or error | App shows "Checked offline" and uses local `buildHints()` automatically |
 | Language toggle | `currentLang` var + `data-i18n` attributes + `LANG` object | One place to edit any string |

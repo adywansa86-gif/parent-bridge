@@ -29,7 +29,7 @@ const LANG = {
     readAgainBtn:    'Read the lesson again',
     lessonCards: [
       { emoji: '👄', organ: 'Mouth',            fact: 'Teeth chew the food and saliva makes it soft.' },
-      { emoji: '🫁', organ: 'Esophagus',        fact: 'It pushes the food down to the stomach.' },
+      { emoji: '🍽️', organ: 'Esophagus',        fact: 'It pushes the food down to the stomach.' },
       { emoji: '🫙', organ: 'Stomach',          fact: 'Stomach acid breaks the food down and churns it into a soft mush.' },
       { emoji: '🌀', organ: 'Small intestine',  fact: 'The body absorbs the nutrients from the food here.' },
       { emoji: '➰', organ: 'Large intestine',  fact: 'Water is absorbed, and the rest becomes waste.' },
@@ -70,6 +70,8 @@ const LANG = {
     hintFunction: 'What does the {organ} do? Try adding that.',
     hintOrder:    'Check the order — does the food travel in the right direction?',
     hintConcept:  'Think about: what happens to the nutrients? What leaves the body?',
+    hintListLike: 'You listed many words. Now explain in sentences: what happens to the food in the mouth?',
+    emptyAnswer:  'Write or speak your answer first.',
 
     // Score breakdown
     showDetails:    'Show details ▾',
@@ -107,6 +109,10 @@ const LANG = {
     notYetBtn:  '⏰ Not yet',
     thanksMsg:  'Thank you! Every conversation helps. 💛',
 
+    // Parent listen button
+    listenBtn:  '🔊 Listen',
+    listenStop: '🔊 Stop',
+
     // Teacher view
     teacherHelper:  'Tap a level badge to correct it.',
     needsHelpTitle: '🔴 Needs help today',
@@ -117,8 +123,13 @@ const LANG = {
     lvlNeedsHelp:   'Needs help',
     lvlNotDone:     'Not done yet',
     teacherSummary: 'Most often missed today: {organ}',
+    teacherStats:   'Talked at home: {talked}/25 · Understands {u} · Partly {p} · Needs help {n} · Not done {nd}',
     talkedYes:      '✅ talked',
     talkedNo:       '',
+
+    // Demo guide
+    demoGuideText: 'Try the demo: 1) Learn and answer as a child (type or speak). 2) Open Parent to see tonight\'s message. 3) Open Teacher to see the class.',
+    demoGuideNote: 'Demo uses simulated students only.',
   },
   id: {
     // Nav
@@ -141,7 +152,7 @@ const LANG = {
     readAgainBtn:    'Baca materi lagi',
     lessonCards: [
       { emoji: '👄', organ: 'Mulut',          fact: 'Gigi mengunyah makanan dan air liur membuatnya lunak.' },
-      { emoji: '🫁', organ: 'Kerongkongan',   fact: 'Kerongkongan mendorong makanan turun ke lambung.' },
+      { emoji: '🍽️', organ: 'Kerongkongan',   fact: 'Kerongkongan mendorong makanan turun ke lambung.' },
       { emoji: '🫙', organ: 'Lambung',        fact: 'Asam lambung menghancurkan dan mengaduk makanan menjadi seperti bubur.' },
       { emoji: '🌀', organ: 'Usus halus',     fact: 'Di sini sari-sari makanan diserap oleh tubuh.' },
       { emoji: '➰', organ: 'Usus besar',     fact: 'Air diserap, dan sisanya menjadi kotoran.' },
@@ -182,6 +193,8 @@ const LANG = {
     hintFunction: 'Apa fungsi {organ}? Coba tambahkan.',
     hintOrder:    'Periksa urutannya — apakah makanan berjalan ke arah yang benar?',
     hintConcept:  'Pikirkan: apa yang terjadi dengan sari makanan? Apa yang keluar dari tubuh?',
+    hintListLike: 'Kamu menyebut banyak kata. Sekarang jelaskan dengan kalimat: apa yang terjadi pada makanan di mulut?',
+    emptyAnswer:  'Tulis atau ucapkan jawabanmu dulu.',
 
     // Score breakdown
     showDetails:    'Lihat detail ▾',
@@ -219,6 +232,10 @@ const LANG = {
     notYetBtn:  '⏰ Belum sempat',
     thanksMsg:  'Terima kasih! Setiap obrolan sangat berarti. 💛',
 
+    // Parent listen button
+    listenBtn:  '🔊 Dengarkan',
+    listenStop: '🔊 Berhenti',
+
     // Teacher view
     teacherHelper:  'Ketuk lencana level untuk mengubahnya.',
     needsHelpTitle: '🔴 Perlu bantuan hari ini',
@@ -229,8 +246,13 @@ const LANG = {
     lvlNeedsHelp:   'Perlu bantuan',
     lvlNotDone:     'Belum selesai',
     teacherSummary: 'Paling sering terlewat hari ini: {organ}',
+    teacherStats:   'Sudah berdiskusi di rumah: {talked}/25 · Paham {u} · Sebagian {p} · Perlu bantuan {n} · Belum {nd}',
     talkedYes:      '✅ sudah bicara',
     talkedNo:       '',
+
+    // Demo guide
+    demoGuideText: 'Coba demonya: 1) Belajar dan jawab sebagai murid (ketik atau bicara). 2) Buka Orang Tua untuk melihat pesan malam ini. 3) Buka Guru untuk melihat kelas.',
+    demoGuideNote: 'Demo hanya memakai data siswa simulasi.',
   }
 };
 
@@ -294,6 +316,29 @@ const RUBRIC = {
   weights: { organs: 20, functions: 30, order: 30, concepts: 20 }
 };
 
+// ── List check ───────────────────────────────────────────────
+// Build stems: all organ names, function words, and concept words,
+// split on spaces, length >= 3, excluding "food", "pipe", "makanan".
+const KEY_STEMS = [...new Set(
+  [
+    ...RUBRIC.organs.flatMap(o => [...o.names, ...o.function_words]),
+    ...RUBRIC.concepts.flatMap(c => c.words),
+  ]
+    .flatMap(w => w.split(' '))
+    .filter(w => w.length >= 3 && !['food', 'pipe', 'makanan'].includes(w))
+)];
+
+/**
+ * Returns true if the answer looks like a keyword list: 10+ words but
+ * fewer than 12% of them are non-rubric (glue) words.
+ */
+function isListLike(text) {
+  const words = text.toLowerCase().match(/[a-z]+/g) || [];
+  if (words.length < 10) return false;
+  const glue = words.filter(w => !KEY_STEMS.some(k => w.includes(k))).length;
+  return glue / words.length < 0.12;
+}
+
 // ── Rubric engine ────────────────────────────────────────────
 
 /**
@@ -332,6 +377,9 @@ function checkAnswer(text) {
   const lower = text.toLowerCase();
   const sentences = splitSentences(text);
 
+  // ── List check: keyword dump → functions = 0, order = 0 ──
+  const listLike = isListLike(lower);
+
   // ── 1. Organs (whole word match) ──
   const organMatches = {}; // id → first position in text
   for (const organ of RUBRIC.organs) {
@@ -348,35 +396,39 @@ function checkAnswer(text) {
   const organsFound = foundOrganIds.length;
   const organsScore = Math.round(RUBRIC.weights.organs * organsFound / 6);
 
-  // ── 2. Functions (first 5 organs only) ──
+  // ── 2. Functions (first 5 organs only; zero if list-like) ──
   const first5 = RUBRIC.organs.slice(0, 5);
   let functionsCount = 0;
   const functionsMatched = []; // organ ids with function match
-  for (const organ of first5) {
-    if (!foundOrganIds.includes(organ.id)) continue; // organ not mentioned
-    for (const sentence of sentences) {
-      const sLower = sentence.toLowerCase();
-      const hasOrgan = organ.names.some(n => matchesWholeWord(sLower, n));
-      if (!hasOrgan) continue;
-      const hasFunc = organ.function_words.some(fw => matchesSubstring(sLower, fw));
-      if (hasFunc) {
-        functionsCount++;
-        functionsMatched.push(organ.id);
-        break; // one sentence is enough for this organ
+  if (!listLike) {
+    for (const organ of first5) {
+      if (!foundOrganIds.includes(organ.id)) continue; // organ not mentioned
+      for (const sentence of sentences) {
+        const sLower = sentence.toLowerCase();
+        const hasOrgan = organ.names.some(n => matchesWholeWord(sLower, n));
+        if (!hasOrgan) continue;
+        const hasFunc = organ.function_words.some(fw => matchesSubstring(sLower, fw));
+        if (hasFunc) {
+          functionsCount++;
+          functionsMatched.push(organ.id);
+          break; // one sentence is enough for this organ
+        }
       }
     }
   }
   const functionsScore = Math.round(RUBRIC.weights.functions * functionsCount / 5);
 
-  // ── 3. Order (sort by first position, count correct-direction pairs) ──
+  // ── 3. Order (sort by first position, count correct-direction pairs; zero if list-like) ──
   // Only consider organs that were matched
   const matchedOrganObjs = RUBRIC.organs.filter(o => foundOrganIds.includes(o.id));
   // Sort by first appearance position in text
   matchedOrganObjs.sort((a, b) => organMatches[a.id] - organMatches[b.id]);
   let correctPairs = 0;
-  for (let i = 0; i < matchedOrganObjs.length - 1; i++) {
-    if (matchedOrganObjs[i].bodyOrder < matchedOrganObjs[i + 1].bodyOrder) {
-      correctPairs++;
+  if (!listLike) {
+    for (let i = 0; i < matchedOrganObjs.length - 1; i++) {
+      if (matchedOrganObjs[i].bodyOrder < matchedOrganObjs[i + 1].bodyOrder) {
+        correctPairs++;
+      }
     }
   }
   const orderScore = Math.round(RUBRIC.weights.order * correctPairs / 5);
@@ -399,7 +451,7 @@ function checkAnswer(text) {
 
   return {
     total, organsScore, functionsScore, orderScore, conceptsScore,
-    level,
+    level, listLike,
     foundOrganIds, functionsMatched, correctPairs, conceptsMatched
   };
 }
@@ -407,9 +459,12 @@ function checkAnswer(text) {
 /**
  * Build up to 2 hint strings for the current language.
  */
-function buildHints({ foundOrganIds, functionsMatched, correctPairs, matchedOrganObjs, conceptsMatched }) {
+function buildHints({ foundOrganIds, functionsMatched, correctPairs, matchedOrganObjs, conceptsMatched, listLike }) {
   const L = LANG[currentLang];
   const hints = [];
+
+  // List-like answer: only one hint
+  if (listLike) return [L.hintListLike];
 
   // Hint 1a: order is wrong (highest priority — tells the child what to fix first)
   if (matchedOrganObjs.length >= 2 && correctPairs < matchedOrganObjs.length - 1) {
@@ -479,8 +534,16 @@ function offlineOrganName(organ) {
  * Uses the gap and orderProblem from computeGap().
  */
 function offlineTemplateHints(result) {
-  const { gap, orderProblem } = computeGap(result);
   const id = currentLang === 'id';
+
+  // List-like answer: single hint, mirrors worker templateHints()
+  if (result.listLike) {
+    return [id
+      ? 'Kamu menyebut banyak kata. Sekarang jelaskan dengan kalimat: apa yang terjadi pada makanan di mulut?'
+      : 'You listed many words. Now explain in sentences: what happens to the food in the mouth?'];
+  }
+
+  const { gap, orderProblem } = computeGap(result);
 
   if (result.level === 'understands' && !gap && !orderProblem) {
     return [id
@@ -592,6 +655,15 @@ function offlineTemplateParent(result) {
       name: 'D-EN', lang: 'en', expected: { total: 4, o: 0, f: 0, r: 0, c: 4 },
       text: 'We eat food, it goes into the tummy and turns into poop.'
     },
+    // List-check tests: keyword dumps must score low (functions=0, order=0)
+    {
+      name: 'LIST-EN', lang: 'en', expected: { total: 40, o: 20, f: 0, r: 0, c: 20 },
+      text: 'mouth teeth saliva esophagus push stomach acid small intestine absorb nutrients large intestine water anus out digest energy waste'
+    },
+    {
+      name: 'LIST-ID', lang: 'id', expected: { total: 36, o: 20, f: 0, r: 0, c: 16 },
+      text: 'mulut gigi kerongkongan dorong lambung asam usus halus serap sari makanan usus besar air anus keluar cerna energi'
+    },
   ];
 
   let allPass = true;
@@ -613,7 +685,7 @@ function offlineTemplateParent(result) {
   }
 
   if (allPass) {
-    console.log('✅ All 8 rubric tests PASS');
+    console.log('✅ All 10 rubric tests PASS');
   } else {
     console.group('❌ Rubric test FAILURES');
     for (const res of results) {
@@ -824,6 +896,8 @@ function refreshChildLang() {
   sel.options[4].text = L.sampleD;
   // Update voice button text / note for new language
   if (typeof window._refreshVoiceBtn === 'function') window._refreshVoiceBtn();
+  // Update demo guide text
+  refreshDemoGuide();
 }
 
 // ── Voice Answer (Web Speech API) ────────────────────────────
@@ -1043,7 +1117,17 @@ function initChildView() {
   // Check button — calls AI Worker, falls back to local rubric on error/timeout
   btn.addEventListener('click', async () => {
     const text = ta.value.trim();
-    if (!text) return;
+    if (!text) {
+      const emptyMsg = document.getElementById('empty-answer-msg');
+      if (emptyMsg) {
+        emptyMsg.textContent = LANG[currentLang].emptyAnswer;
+        emptyMsg.style.display = 'block';
+        setTimeout(() => { emptyMsg.style.display = 'none'; }, 3000);
+      }
+      return;
+    }
+    const emptyMsg = document.getElementById('empty-answer-msg');
+    if (emptyMsg) emptyMsg.style.display = 'none';
 
     // Show "Thinking…" while we wait for the worker
     const origLabel = btn.textContent;
@@ -1204,7 +1288,7 @@ function showResult(result) {
   // Score breakdown (hidden by default, toggle via "Show details")
   const breakdown = document.getElementById('score-breakdown');
   breakdown.innerHTML =
-    `<span>🫁 ${L.detailOrgans}: ${result.organsScore}/20</span>` +
+    `<span>🍽️ ${L.detailOrgans}: ${result.organsScore}/20</span>` +
     `<span>⚙️ ${L.detailFunctions}: ${result.functionsScore}/30</span>` +
     `<span>↕️ ${L.detailOrder}: ${result.orderScore}/30</span>` +
     `<span>💡 ${L.detailConcepts}: ${result.conceptsScore}/20</span>` +
@@ -1229,12 +1313,15 @@ function renderParent() {
   const notYetBtn = document.getElementById('notyet-btn');
   const conf      = document.getElementById('confirmation-text');
 
+  const listenBtn = document.getElementById('listen-btn');
+
   // ── No result yet: show placeholder, hide action buttons ──
   if (!lastResult) {
     bubble.innerHTML = `<p style="color:var(--muted);font-style:italic;">${L.notDoneMsg}</p>`;
     talkedBtn.style.display = 'none';
     notYetBtn.style.display = 'none';
     conf.textContent = '';
+    if (listenBtn) listenBtn.style.display = 'none';
     return;
   }
 
@@ -1265,6 +1352,29 @@ function renderParent() {
     if (i === 3) return `<p class="parent-answer-hint"><strong>${L.parentAnswerLabel}</strong> ${text}</p>`;
     return `<p>${text}</p>`;
   }).join('');
+
+  // ── Listen button ──
+  if (listenBtn && window.speechSynthesis) {
+    listenBtn.style.display = 'block';
+    listenBtn.textContent = L.listenBtn;
+    // Remove previous handler before re-attaching
+    listenBtn.onclick = () => {
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        listenBtn.textContent = L.listenBtn;
+        return;
+      }
+      const fullText = bubbleLines.filter(Boolean).join('. ');
+      const utt = new SpeechSynthesisUtterance(fullText);
+      utt.lang = currentLang === 'id' ? 'id-ID' : 'en-US';
+      utt.onend = () => { listenBtn.textContent = L.listenBtn; };
+      utt.onerror = () => { listenBtn.textContent = L.listenBtn; };
+      window.speechSynthesis.speak(utt);
+      listenBtn.textContent = L.listenStop;
+    };
+  } else if (listenBtn) {
+    listenBtn.style.display = 'none';
+  }
 
   // Restore button state (in case previously hidden)
   talkedBtn.textContent = L.talkedBtn;
@@ -1362,6 +1472,22 @@ function renderTeacher() {
     summaryEl.style.display = 'none';
   }
 
+  // ── Stats line: talked / level counts ──
+  const statsEl = document.getElementById('teacher-stats');
+  if (statsEl) {
+    const talked = STUDENTS.filter(s => s.talked).length;
+    const u  = STUDENTS.filter(s => s.level === 'understands').length;
+    const p  = STUDENTS.filter(s => s.level === 'partly').length;
+    const n  = STUDENTS.filter(s => s.level === 'needs_help').length;
+    const nd = STUDENTS.filter(s => s.level === 'not_done').length;
+    statsEl.textContent = L.teacherStats
+      .replace('{talked}', talked)
+      .replace('{u}',  u)
+      .replace('{p}',  p)
+      .replace('{n}',  n)
+      .replace('{nd}', nd);
+  }
+
   // ── Needs-help section: needs_help + not_done ──
   const nhList = document.getElementById('needs-help-list');
   const priority = STUDENTS.filter(s => s.level === 'needs_help' || s.level === 'not_done');
@@ -1431,6 +1557,30 @@ document.addEventListener('DOMContentLoaded', () => {
   // Apply language strings
   applyLang();
 
+  // Init demo guide card
+  initDemoGuide();
+
   // Default view
   showView('child');
 });
+
+// ── Demo guide (dismissible card at top of Child tab) ────────
+function initDemoGuide() {
+  const card = document.getElementById('demo-guide');
+  const closeBtn = document.getElementById('demo-guide-close');
+  if (!card || !closeBtn) return;
+
+  refreshDemoGuide();
+
+  closeBtn.addEventListener('click', () => {
+    card.style.display = 'none';
+  });
+}
+
+function refreshDemoGuide() {
+  const L = LANG[currentLang];
+  const textEl = document.getElementById('demo-guide-text');
+  const noteEl = document.getElementById('demo-guide-note');
+  if (textEl) textEl.textContent = L.demoGuideText;
+  if (noteEl) noteEl.textContent = L.demoGuideNote;
+}

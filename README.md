@@ -37,6 +37,7 @@ The child can answer in **English or Indonesian**. The whole app can switch betw
 Many young children find typing hard. They can press **🎤 Speak / Bicara** and talk. Their words become text, which they can fix before checking.
 - Uses the browser's built-in speech recognition (needs internet and Chrome).
 - **No recording is saved** by Parent Bridge.
+- Speech is turned into text by the browser's speech service (in Chrome, this is Google). Parent Bridge does not store any audio.
 
 ## Privacy
 

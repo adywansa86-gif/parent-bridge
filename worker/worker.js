@@ -74,6 +74,25 @@ const CONCEPTS = [
 ];
 const WEIGHTS = { organs: 20, functions: 30, order: 30, concepts: 20 };
 
+// "List check": an answer that is only a list of rubric words (no sentences)
+// does not show understanding, so it gets no points for functions or order.
+const KEY_STEMS = [
+  ...new Set(
+    [
+      ...ORGANS.flatMap((o) => [...o.names, ...o.fnWords]),
+      ...CONCEPTS.flatMap((c) => c.words),
+    ]
+      .flatMap((w) => w.split(" "))
+      .filter((w) => w.length >= 3 && !["food", "pipe", "makanan"].includes(w))
+  ),
+];
+function isListLike(text) {
+  const words = text.match(/[a-z]+/g) || [];
+  if (words.length < 10) return false;
+  const glue = words.filter((w) => !KEY_STEMS.some((k) => w.includes(k))).length;
+  return glue / words.length < 0.12;
+}
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -116,8 +135,10 @@ function scoreAnswer(answer) {
   }
   const mentioned = ORGAN_IDS.filter((id) => id in pos);
 
+  const listLike = isListLike(t);
   const withFn = [];
   for (const o of ORGANS.slice(0, 5)) {
+    if (listLike) break;
     if (!(o.id in pos)) continue;
     const ok = sentences.some(
       (s) => o.names.some((n) => wholeWord(n, s) >= 0) && o.fnWords.some((w) => s.includes(w))
@@ -127,10 +148,10 @@ function scoreAnswer(answer) {
 
   const seq = Object.keys(pos).sort((a, b) => pos[a] - pos[b]);
   let pairs = 0;
-  for (let i = 1; i < seq.length; i++) {
+  for (let i = 1; i < seq.length && !listLike; i++) {
     if (ORGAN_IDS.indexOf(seq[i - 1]) < ORGAN_IDS.indexOf(seq[i])) pairs++;
   }
-  const orderProblem = seq.length > 1 && pairs < seq.length - 1;
+  const orderProblem = !listLike && seq.length > 1 && pairs < seq.length - 1;
 
   const concepts = CONCEPTS.filter((c) => c.words.some((w) => t.includes(w))).map((c) => c.id);
 
@@ -157,6 +178,7 @@ function scoreAnswer(answer) {
     organs_with_function: withFn,
     organs_missing: ORGAN_IDS.filter((id) => !(id in pos)),
     order_problem: orderProblem,
+    list_like: listLike,
     concepts_used: concepts,
     gap,
   };
@@ -165,6 +187,11 @@ function scoreAnswer(answer) {
 // ---------- Template texts (used as fallback, and for the parent answer) ----------
 function templateHints(r, lang) {
   const id = lang === "id";
+  if (r.list_like) {
+    return [id
+      ? "Kamu menyebut banyak kata. Sekarang jelaskan dengan kalimat: apa yang terjadi pada makanan di mulut?"
+      : "You listed many words. Now explain in sentences: what happens to the food in the mouth?"];
+  }
   if (r.level === "understands" && !r.gap && !r.order_problem) {
     return [id ? "Luar biasa! Kamu bisa menjelaskan seluruh perjalanan makanan." : "Amazing! You explained the whole journey of food."];
   }
@@ -275,7 +302,7 @@ async function check(env, answer, lang, name) {
   let parent = { ...fallbackParent };
   let feedbackSource = "template";
 
-  if (env.AI) {
+  if (env.AI && !r.list_like) {
     try {
       const ai = await aiFeedback(env, r, lang, name);
       if (ai) {

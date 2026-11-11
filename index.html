@@ -28,6 +28,13 @@
   <!-- ── Child View ── -->
   <section id="child-view" class="view">
 
+    <!-- Demo guide card (dismissible) -->
+    <div id="demo-guide" class="demo-guide-card">
+      <button id="demo-guide-close" class="demo-guide-close" aria-label="Close">✕</button>
+      <p id="demo-guide-text"></p>
+      <p id="demo-guide-note" class="demo-guide-note"></p>
+    </div>
+
     <!-- Lesson panel (shown first) -->
     <div id="lesson-panel" class="card">
       <h2 id="lesson-title" class="lesson-title"></h2>
@@ -71,6 +78,7 @@
 
       <div style="margin-top:16px;">
         <button id="check-btn" class="btn btn-primary" data-i18n="checkBtn">Check my answer ✓</button>
+        <p id="empty-answer-msg" style="display:none;font-size:0.82rem;color:#b91c1c;margin-top:6px;"></p>
       </div>
 
       <!-- Result area -->
@@ -113,6 +121,9 @@
       <!-- WhatsApp-style bubble -->
       <div id="wa-bubble" class="wa-bubble"></div>
 
+      <!-- Listen button (hidden if speechSynthesis not supported or no result) -->
+      <button id="listen-btn" class="btn-listen" style="display:none;margin-top:10px;"></button>
+
       <div class="parent-btn-row">
         <button id="talked-btn" class="btn btn-secondary" data-i18n="talkedBtn">✅ We talked about it</button>
         <button id="notyet-btn" class="btn btn-ghost"     data-i18n="notYetBtn">⏰ Not yet</button>
@@ -124,6 +135,7 @@
   <!-- ── Teacher View ── -->
   <section id="teacher-view" class="view">
     <p id="teacher-summary" class="teacher-summary"></p>
+    <p id="teacher-stats" class="teacher-stats"></p>
     <p style="font-size:0.82rem;color:var(--muted);margin-bottom:12px;" data-i18n="teacherHelper">
       Tap a level badge to correct it.
     </p>
