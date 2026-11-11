@@ -1263,22 +1263,34 @@ function showResult(result) {
   if (feedbackLabel.textContent) hintsDiv.after(feedbackLabel);
 
   // Update Raka's Teacher entry with this result
+  // Reason line for the Teacher view: what was not explained, what was missed, order
   const missingOrgans = RUBRIC.organs.filter(o => !result.foundOrganIds.includes(o.id));
+  const reasonGap = computeGap(result);
   let rakaReasonEn, rakaReasonId;
   if (result.level === 'understands') {
     rakaReasonEn = 'Good explanation';
     rakaReasonId = 'Penjelasan bagus';
-  } else if (missingOrgans.length > 0) {
-    const names = missingOrgans.slice(0, 2);
-    rakaReasonEn = 'Missed: ' + names.map(o => o.en_name).join(', ');
-    rakaReasonId = 'Terlewat: ' + names.map(o => o.id_name).join(', ');
-    if (result.correctPairs < (result.foundOrganIds.length > 1 ? result.foundOrganIds.length - 1 : 0)) {
-      rakaReasonEn += '; order needs work';
-      rakaReasonId += '; urutan perlu diperbaiki';
-    }
+  } else if (result.listLike) {
+    rakaReasonEn = 'Listed words, no sentences';
+    rakaReasonId = 'Hanya daftar kata, belum kalimat';
   } else {
-    rakaReasonEn = 'Order needs work';
-    rakaReasonId = 'Urutan perlu diperbaiki';
+    const partsEn = [], partsId = [];
+    if (reasonGap.gap && reasonGap.gap.type === 'function') {
+      const g = RUBRIC.organs.find(o => o.id === reasonGap.gap.id);
+      partsEn.push('Not explained: ' + g.en_name);
+      partsId.push('Belum dijelaskan: ' + g.id_name);
+    }
+    if (missingOrgans.length > 0) {
+      const names = missingOrgans.slice(0, 2);
+      partsEn.push((partsEn.length ? 'missed: ' : 'Missed: ') + names.map(o => o.en_name).join(', '));
+      partsId.push((partsId.length ? 'terlewat: ' : 'Terlewat: ') + names.map(o => o.id_name).join(', '));
+    }
+    if (reasonGap.orderProblem) {
+      partsEn.push(partsEn.length ? 'order needs work' : 'Order needs work');
+      partsId.push(partsId.length ? 'urutan perlu diperbaiki' : 'Urutan perlu diperbaiki');
+    }
+    rakaReasonEn = partsEn.join('; ') || 'Needs more detail';
+    rakaReasonId = partsId.join('; ') || 'Perlu lebih lengkap';
   }
   STUDENTS[0].level  = result.level;
   STUDENTS[0].reason = { en: rakaReasonEn, id: rakaReasonId };
