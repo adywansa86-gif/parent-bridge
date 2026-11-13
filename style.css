@@ -553,3 +553,173 @@ footer {
   min-height: 40px;
 }
 .btn-listen:active { opacity: 0.85; }
+
+
+/* ════════════════════════════════════════════════════════════
+   Design refresh (Nov 2026): friendlier type, calmer header,
+   pill tabs, clearer teacher numbers, same colours as the deck
+   ════════════════════════════════════════════════════════════ */
+:root {
+  --navy-2: #1D4A66;
+  --cream-2: #EFE8DA;
+  --line: #E6DCC8;
+  --font-head: 'Fredoka', 'Nunito Sans', system-ui, sans-serif;
+  --font-body: 'Nunito Sans', -apple-system, 'Segoe UI', system-ui, sans-serif;
+  --radius: 18px;
+  --text: #12324A;
+  --muted: #5F6F7B;
+}
+body { font-family: var(--font-body); color: var(--text); }
+
+/* Header: content stays in a centred column on laptops */
+header { padding: 12px 16px 0; box-shadow: 0 2px 14px rgba(18, 50, 74, 0.18); }
+.header-top, nav { max-width: 560px; margin-left: auto; margin-right: auto; }
+.header-top { margin-bottom: 10px; gap: 12px; }
+.app-title { font-family: var(--font-head); font-size: 1.4rem; font-weight: 600; letter-spacing: 0.01em; }
+.app-subtitle { font-size: 0.75rem; opacity: 0.75; }
+
+#lang-btn {
+  background: rgba(255, 255, 255, 0.10);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+#lang-btn:hover { background: var(--orange); border-color: var(--orange); opacity: 1; }
+
+/* Pill tabs */
+nav { gap: 6px; padding-bottom: 12px; }
+.tab-btn {
+  border-bottom: none;
+  border-radius: 999px;
+  padding: 9px 4px;
+  font-family: var(--font-head);
+  font-size: 1rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.72);
+}
+.tab-btn:not(.active):hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+.tab-btn.active { background: var(--orange); color: #fff; }
+
+main { max-width: 560px; padding: 22px 16px 32px; }
+
+/* Cards and headings */
+.card {
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: 0 1px 2px rgba(18, 50, 74, 0.05), 0 10px 28px rgba(18, 50, 74, 0.07);
+}
+.lesson-title, #child-view .question, .section-title, .needs-help-section h2 {
+  font-family: var(--font-head);
+  font-weight: 600;
+  color: var(--navy);
+}
+.lesson-title { font-size: 1.5rem; }
+#child-view .question { font-size: 1.35rem; line-height: 1.3; }
+.section-title { font-size: 1.15rem; margin-bottom: 12px; }
+.needs-help-section h2 { font-size: 1.15rem; color: #8b2e0e; }
+
+.btn, .badge, .btn-voice, .btn-listen { font-family: var(--font-head); font-weight: 600; letter-spacing: 0.01em; }
+.btn { border-radius: 999px; }
+.btn-primary { box-shadow: 0 4px 12px rgba(224, 122, 63, 0.30); }
+#child-view textarea { border-radius: 14px; font-family: var(--font-body); }
+.lesson-card { border-radius: 16px; }
+.lesson-card-organ { font-family: var(--font-head); font-weight: 600; font-size: 1.05rem; }
+
+/* Demo guide: title + three numbered steps */
+.demo-guide-card { background: #E8F4F2; border: 1px solid #BFDCD7; padding: 14px 40px 12px 16px; }
+#demo-guide-text { display: flex; flex-direction: column; gap: 8px; }
+.demo-guide-title { font-family: var(--font-head); font-weight: 600; font-size: 1.05rem; color: var(--navy); }
+.demo-step { display: flex; gap: 10px; align-items: flex-start; line-height: 1.4; }
+.demo-step-num {
+  flex: none;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--teal);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  display: inline-flex; align-items: center; justify-content: center;
+  margin-top: 1px;
+}
+.demo-guide-note { margin-top: 8px; }
+
+/* Parent message */
+.wa-bubble { border-radius: 18px; }
+.btn-listen { border-radius: 999px; padding: 8px 18px; }
+
+/* Teacher numbers */
+.teacher-summary { border-radius: 14px; font-weight: 700; }
+.teacher-stats {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin: 10px 0 12px;
+  box-shadow: 0 1px 2px rgba(18, 50, 74, 0.05), 0 10px 28px rgba(18, 50, 74, 0.07);
+  color: var(--text);
+}
+.stat-talked { display: flex; align-items: center; gap: 14px; }
+.stat-talked-num { font-family: var(--font-head); font-size: 2.4rem; font-weight: 600; line-height: 1; color: var(--teal); }
+.stat-talked-num span { font-size: 1.2rem; color: var(--muted); }
+.stat-talked-text { flex: 1; font-weight: 700; font-size: 0.92rem; }
+.stat-bar { height: 8px; background: var(--cream-2); border-radius: 99px; margin-top: 6px; overflow: hidden; }
+.stat-bar-fill { height: 100%; background: var(--teal); border-radius: 99px; }
+.stat-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.stat-chip { border-radius: 999px; padding: 5px 12px; font-size: 0.82rem; font-weight: 600; }
+.stat-chip b { font-family: var(--font-head); font-size: 0.95rem; margin-right: 2px; }
+.chip-u  { background: #d4f5ef; color: #1a6b63; }
+.chip-p  { background: #fef3cd; color: #7a5c00; }
+.chip-n  { background: #fde8e0; color: #8b2e0e; }
+.chip-nd { background: #ECECEC; color: #555; }
+
+/* Student rows: light dividers, names in the heading font */
+.student-row { border-radius: 14px; }
+.card .student-list { gap: 0; }
+.card .student-row { border-bottom: 1px solid #F0EADF; border-radius: 0; }
+.card .student-row:last-child { border-bottom: none; }
+.student-name { font-family: var(--font-head); font-weight: 600; font-size: 1rem; }
+
+footer { font-family: var(--font-head); letter-spacing: 0.02em; }
+
+/* Laptops: a soft backdrop so the app column does not float in empty space */
+@media (min-width: 760px) {
+  body {
+    background:
+      radial-gradient(circle at 12% 30%, rgba(42, 140, 130, 0.10) 0, transparent 38%),
+      radial-gradient(circle at 88% 70%, rgba(224, 122, 63, 0.10) 0, transparent 38%),
+      var(--cream);
+  }
+}
+button, select, textarea { font-family: inherit; }
+#lang-btn { font-family: var(--font-head); font-weight: 600; letter-spacing: 0.01em; }
+.btn-listen { margin-bottom: 12px; }
+
+/* ── Calmer colour balance (about 60% cream, 30% navy/teal, 10% orange) ── */
+header { padding: 10px 16px 0; }
+.header-top { margin-bottom: 8px; }
+.app-title { font-size: 1.25rem; }
+nav { padding-bottom: 10px; }
+.tab-btn { padding: 7px 4px; font-size: 0.95rem; }
+.tab-btn.active { background: var(--cream); color: var(--navy); }
+#lang-btn:hover { background: rgba(255, 255, 255, 0.2); border-color: rgba(255, 255, 255, 0.6); }
+
+/* "All students" folds away so the teacher sees what matters first */
+.all-students summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0;
+}
+.all-students summary::-webkit-details-marker { display: none; }
+.all-students summary::after {
+  content: '▾';
+  font-size: 1rem;
+  color: var(--muted);
+  transition: transform 0.2s;
+}
+.all-students[open] summary { margin-bottom: 12px; }
+.all-students[open] summary::after { transform: rotate(180deg); }

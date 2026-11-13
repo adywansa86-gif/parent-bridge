@@ -13,7 +13,7 @@ const LANG = {
     tabChild:   'Child',
     tabParent:  'Parent',
     tabTeacher: 'Teacher',
-    langBtn:    'ID',
+    langBtn:    '🌐 Bahasa Indonesia',
 
     // AI / offline labels
     thinking:       'Thinking…',
@@ -124,6 +124,7 @@ const LANG = {
     lvlNotDone:     'Not done yet',
     teacherSummary: 'Most often missed today: {organ}',
     teacherStats:   'Talked at home: {talked}/{total} · Understands {u} · Partly {p} · Needs help {n} · Not done {nd}',
+    statTalked: 'families talked at home today', statU: 'Understand', statP: 'Partly', statN: 'Need help', statND: 'Not done',
     talkedYes:      '✅ talked',
     talkedNo:       '',
 
@@ -136,7 +137,7 @@ const LANG = {
     tabChild:   'Murid',
     tabParent:  'Orang Tua',
     tabTeacher: 'Guru',
-    langBtn:    'EN',
+    langBtn:    '🌐 English',
 
     // AI / offline labels
     thinking:       'Memeriksa…',
@@ -247,6 +248,7 @@ const LANG = {
     lvlNotDone:     'Belum selesai',
     teacherSummary: 'Paling sering terlewat hari ini: {organ}',
     teacherStats:   'Sudah berdiskusi di rumah: {talked}/{total} · Paham {u} · Sebagian {p} · Perlu bantuan {n} · Belum {nd}',
+    statTalked: 'keluarga sudah berdiskusi di rumah hari ini', statU: 'Paham', statP: 'Sebagian', statN: 'Perlu bantuan', statND: 'Belum',
     talkedYes:      '✅ sudah bicara',
     talkedNo:       '',
 
@@ -1551,13 +1553,20 @@ function renderTeacher() {
     const p  = STUDENTS.filter(s => s.level === 'partly').length;
     const n  = STUDENTS.filter(s => s.level === 'needs_help').length;
     const nd = STUDENTS.filter(s => s.level === 'not_done').length;
-    statsEl.textContent = L.teacherStats
-      .replace('{talked}', talked)
-      .replace('{total}', STUDENTS.length)
-      .replace('{u}',  u)
-      .replace('{p}',  p)
-      .replace('{n}',  n)
-      .replace('{nd}', nd);
+    const pct = Math.round(talked / STUDENTS.length * 100);
+    statsEl.innerHTML =
+      `<div class="stat-talked">` +
+        `<div class="stat-talked-num">${talked}<span>/${STUDENTS.length}</span></div>` +
+        `<div class="stat-talked-text">${L.statTalked}` +
+          `<div class="stat-bar"><div class="stat-bar-fill" style="width:${pct}%"></div></div>` +
+        `</div>` +
+      `</div>` +
+      `<div class="stat-chips">` +
+        `<span class="stat-chip chip-u"><b>${u}</b> ${L.statU}</span>` +
+        `<span class="stat-chip chip-p"><b>${p}</b> ${L.statP}</span>` +
+        `<span class="stat-chip chip-n"><b>${n}</b> ${L.statN}</span>` +
+        `<span class="stat-chip chip-nd"><b>${nd}</b> ${L.statND}</span>` +
+      `</div>`;
   }
 
   // ── Needs-help section: needs_help + not_done ──
@@ -1653,6 +1662,15 @@ function refreshDemoGuide() {
   const L = LANG[currentLang];
   const textEl = document.getElementById('demo-guide-text');
   const noteEl = document.getElementById('demo-guide-note');
-  if (textEl) textEl.textContent = L.demoGuideText;
+  if (textEl) {
+    // "Try the demo: 1) ... 2) ... 3) ..." → a title and three numbered steps
+    const parts = L.demoGuideText.split(/\s*\d\)\s*/);
+    const title = parts.shift().replace(/:\s*$/, '');
+    textEl.innerHTML =
+      `<span class="demo-guide-title">${title}</span>` +
+      parts.filter(Boolean).map((t, i) =>
+        `<span class="demo-step"><span class="demo-step-num">${i + 1}</span><span>${t.replace(/\.\s*$/, '')}</span></span>`
+      ).join('');
+  }
   if (noteEl) noteEl.textContent = L.demoGuideNote;
 }

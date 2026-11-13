@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Parent Bridge — Wansa School</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -135,7 +138,7 @@
   <!-- ── Teacher View ── -->
   <section id="teacher-view" class="view">
     <p id="teacher-summary" class="teacher-summary"></p>
-    <p id="teacher-stats" class="teacher-stats"></p>
+    <div id="teacher-stats" class="teacher-stats"></div>
     <p style="font-size:0.82rem;color:var(--muted);margin-bottom:12px;" data-i18n="teacherHelper">
       Tap a level badge to correct it.
     </p>
@@ -147,10 +150,10 @@
     </div>
 
     <!-- All students -->
-    <div class="card">
-      <h2 style="font-size:0.95rem;color:var(--navy);margin-bottom:12px;" data-i18n="allStudents">All students</h2>
+    <details class="card all-students">
+      <summary class="section-title"><span data-i18n="allStudents">All students</span></summary>
       <div id="all-students-list" class="student-list"></div>
-    </div>
+    </details>
   </section>
 
 </main>
