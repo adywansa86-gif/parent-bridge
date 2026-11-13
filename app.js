@@ -1319,6 +1319,60 @@ function showResult(result) {
 }
 
 // ── Parent view ──────────────────────────────────────────────
+// ── Gentle read-aloud for parents ───────────────────────────
+// Uses the device's own voices. Picks the most natural voice available
+// (neural / enhanced / online voices first), speaks a little slower,
+// and reads one sentence at a time so there are natural pauses.
+const NATURAL_VOICE_HINTS = ['natural', 'neural', 'online', 'enhanced', 'premium', 'google', 'siri'];
+const FRIENDLY_VOICE_NAMES = ['gadis', 'damayanti', 'ariana', 'jenny', 'aria', 'ava', 'samantha', 'allison', 'emma', 'michelle', 'zira'];
+
+function pickVoice(lang) {
+  const voices = window.speechSynthesis.getVoices();
+  const code = lang === 'id' ? 'id' : 'en';
+  const matches = voices.filter(v => (v.lang || '').toLowerCase().replace('_', '-').startsWith(code));
+  if (!matches.length) return null;
+  const score = (v) => {
+    const n = v.name.toLowerCase();
+    let sc = 0;
+    if (NATURAL_VOICE_HINTS.some(h => n.includes(h))) sc += 10;
+    if (FRIENDLY_VOICE_NAMES.some(h => n.includes(h))) sc += 5;
+    if (code === 'en' && /en[-_]us/i.test(v.lang)) sc += 2;
+    if (code === 'id' && /id[-_]id/i.test(v.lang)) sc += 2;
+    if (v.localService) sc += 1;
+    return sc;
+  };
+  return matches.sort((a, b) => score(b) - score(a))[0];
+}
+
+// Voices load late on some browsers (Chrome): ask once early
+if (window.speechSynthesis) {
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+}
+
+function speakGently(sentences, lang, onDone) {
+  const synth = window.speechSynthesis;
+  synth.cancel();
+  const voice = pickVoice(lang);
+  const parts = sentences
+    .flatMap(t => String(t).split(/(?<=[.!?])\s+/))
+    .map(t => t.trim())
+    .filter(Boolean);
+  parts.forEach((text, i) => {
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.lang = lang === 'id' ? 'id-ID' : 'en-US';
+    if (voice) utt.voice = voice;
+    utt.rate = 0.9;   // a little slower than normal
+    utt.pitch = 1.05; // a little warmer
+    utt.volume = 1;
+    if (i === parts.length - 1) {
+      utt.onend = onDone;
+    }
+    utt.onerror = onDone;
+    synth.speak(utt);
+  });
+}
+
 function renderParent() {
   const L = LANG[currentLang];
   const name = L.parentChildName;
@@ -1379,12 +1433,14 @@ function renderParent() {
         listenBtn.textContent = L.listenBtn;
         return;
       }
-      const fullText = bubbleLines.filter(Boolean).join('. ');
-      const utt = new SpeechSynthesisUtterance(fullText);
-      utt.lang = currentLang === 'id' ? 'id-ID' : 'en-US';
-      utt.onend = () => { listenBtn.textContent = L.listenBtn; };
-      utt.onerror = () => { listenBtn.textContent = L.listenBtn; };
-      window.speechSynthesis.speak(utt);
+      // Read the message the way a person would: the labels too, one sentence at a time
+      const spoken = [
+        bubbleLines[0],
+        bubbleLines[1],
+        bubbleLines[2] ? (currentLang === 'id' ? 'Malam ini, tanyakan: ' : 'Tonight, ask: ') + bubbleLines[2] : '',
+        bubbleLines[3] ? (currentLang === 'id' ? 'Jawabannya: ' : 'The answer is: ') + bubbleLines[3] : '',
+      ].filter(Boolean);
+      speakGently(spoken, currentLang, () => { listenBtn.textContent = L.listenBtn; });
       listenBtn.textContent = L.listenStop;
     };
   } else if (listenBtn) {
