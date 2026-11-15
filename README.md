@@ -1,3 +1,5 @@
+<p align="center"><img src="images/logo.png" alt="Parent Bridge logo" width="260" /></p>
+
 # Parent Bridge
 
 **Part of Wansa Learning Universe · IBM AI Builders Challenge – AI for Good**
