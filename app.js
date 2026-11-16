@@ -262,12 +262,12 @@ const LANG = {
 const LESSON_IMAGES = {
   diagram: 'images/digestive-system.png',
   icons: [
-    'images/1-mouth.svg',
-    'images/2-esophagus.svg',
-    'images/3-stomach.svg',
-    'images/4-small-intestine.svg',
-    'images/5-large-intestine.svg',
-    'images/6-anus.svg',
+    'images/1-mouth.png',
+    'images/2-esophagus.png',
+    'images/3-stomach.png',
+    'images/4-small-intestine.png',
+    'images/5-large-intestine.png',
+    'images/6-anus.png',
   ],
   // Badge positions on the diagram image [left%, top%]
   badgePositions: [
