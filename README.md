@@ -80,7 +80,7 @@ Many young children find typing hard. They can press **🎤 Speak / Bicara** and
 - **Nothing to install.** Parent Bridge opens in the phone's browser. Tested on Android (Chrome) and iPhone (Safari).
 - **Works with weak internet.** The rubric runs on the phone, so checking still works offline ("Checked offline"). Only Granite's words need the internet.
 - **Very low running cost.** Based on Cloudflare's published prices for IBM Granite 4.0 H Micro ($0.017 per million input tokens, $0.112 per million output tokens, November 2026), one answer (about 600 input and 150 output tokens) costs about **$0.00003**. Cloudflare's free allowance of 10,000 Neurons per day covers roughly **4,000 answers a day**. One class of 25 children needs far less.
-- **Ready to pilot.** Wansa School (grades 4–6) will pilot Parent Bridge from January 2027 with real accounts and parent consent. Wansa Universe, the school's free learning game, already reaches students in 198 schools across 23 provinces, so there is a ready channel to grow.
+- **Ready to pilot.** Wansa School (grades 4–6) will pilot Parent Bridge from January 2027 with real accounts and parent consent. Wansa Universe, the school's free learning game, already reaches students in 208 schools across 57 regencies and cities in 24 provinces, so there is a ready channel to grow.
 
 ## Add a new topic
 
