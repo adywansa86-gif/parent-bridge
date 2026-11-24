@@ -15,6 +15,10 @@ Parent Bridge helps busy parents talk with their children about what they learne
 
 At Wansa School in Halmahera Selatan, Indonesia, many parents work long hours. They want to help their children learn, but they do not know *what* their child learned today or *what to ask*. Teachers also cannot see, every day, which students need help.
 
+## Challenge theme
+
+**AI for Good.** Parent Bridge uses AI to bring families in a remote region into their children's learning, with one short conversation a night.
+
 ## How it works
 
 Parent Bridge has three views:
@@ -34,6 +38,29 @@ The child can answer in **English or Indonesian**. The whole app can switch betw
 3. **Safety checks**: every Granite sentence is checked before it is shown. Off-topic, wrong-science, or unsafe text is replaced with a safe template. The parent's "answer" always comes from the lesson facts, never from AI. Granite's text is checked sentence by sentence: only sentences about the right organ are shown, and the label "Feedback by IBM Granite" appears only when Granite text is really used.
 4. **Keyword lists do not get full marks**: an answer that only lists science words, without sentences, gets no points for functions or order, and the child is asked to explain in sentences.
 5. **Offline fallback**: if there is no internet, the app scores the answer on the device and shows "Checked offline".
+
+## Architecture
+
+```mermaid
+flowchart LR
+    A["Phone or laptop browser<br/>index.html · app.js · style.css<br/>(Cloudflare Pages)"] -- "child's answer (JSON)" --> B["Cloudflare Worker<br/>worker/worker.js"]
+    B --> C["1. Rubric<br/>score 0–100"]
+    C --> D["2. IBM Granite 4.0 H Micro<br/>on Workers AI<br/>writes hint + parent sentence"]
+    D --> E["3. Safety filter<br/>checks every sentence"]
+    E -- "score, hint, parent message (JSON)" --> A
+    A -. "no internet" .-> F["Offline rubric in app.js<br/>'Checked offline'"]
+    A -. "voice in / read aloud" .-> G["Browser Web Speech API"]
+```
+
+| Part | Where | What it does |
+| --- | --- | --- |
+| **App** | `index.html`, `app.js`, `style.css` on Cloudflare Pages | Child, Parent and Teacher views; English and Indonesian; sends the child's answer to the Worker |
+| **Worker** | `worker/worker.js` on Cloudflare Workers | Scores the answer with the rubric, asks IBM Granite for a hint and a parent sentence, then filters Granite's text sentence by sentence |
+| **IBM Granite** | Cloudflare Workers AI, `@cf/ibm-granite/granite-4.0-h-micro` | Writes friendly words only; it never decides the score or the parent's answer |
+| **Offline fallback** | `app.js` | The same rubric runs on the phone when there is no internet |
+| **Voice** | Browser Web Speech API | Speech to text for the child's answer, and a gentle read-aloud for parents; no audio is stored |
+
+There is no database: the demo class is simulated inside `app.js`, so no student data leaves the phone except the answer text sent for checking.
 
 ## Voice answer
 
@@ -70,6 +97,25 @@ The scoring, hints, IBM Granite feedback, safety checks, parent message and teac
 - **IBM Bob** – planned and wrote the app code
 - **IBM Granite** on Cloudflare Workers AI – child hints and parent messages
 - Cloudflare Pages – hosting
+
+## How IBM Bob was used
+
+IBM Bob was the **main development tool** for Parent Bridge. I am a teacher, not a programmer, so Bob worked with me step by step.
+
+**How we worked**
+1. **One shared plan file.** `parent-bridge-plan.md` describes the goal, the three views, the rubric and the privacy rules. Bob read it at the start of each session, so it kept the same picture of the project.
+2. **Plan mode first.** For each feature, Bob proposed the steps and a task list, and I checked them as the teacher.
+3. **Agent mode to build.** Bob then wrote and edited the files, ran the checks, and fixed what failed.
+
+**What Bob built**
+- The app itself: the Child, Parent and Teacher views, the lesson cards and the English / Indonesian switch.
+- The **rubric** and its **test answers** (strong, partial, weak and keyword-list samples) to make sure the same answer always gets the same score.
+- The **IBM Granite connection** through the Cloudflare Worker, with the **offline fallback** in `app.js`.
+- **Voice answers**, including a fix for Android phones that repeated words.
+- The teacher statistics, the demo guide, the parent **Listen** button and the keyword-list check in the app.
+- Git setup and the first pushes to this repository.
+
+After the Bob trial credits ran out, a few small fixes (colours, wording and Worker tuning) were made outside Bob and committed through Bob IDE's Source Control.
 
 ## Files
 
